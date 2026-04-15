@@ -532,7 +532,7 @@ function checkCountryCurrencyCoherence(specPath, schema) {
 
   if (errors.length > 0) {
     errors.forEach((e) => console.error(`        ${e}`));
-    return fail(rel, `Cohérence pays/devise : ${errors.length} problème(s)`);
+    return fail(specPath, `Cohérence pays/devise : ${errors.length} problème(s)`);
   }
   return true;
 }
@@ -566,54 +566,64 @@ function runCrossSpecChecks(loadedSchemas) {
   const groupCount = loadedSchemas.size;
   console.log(`\nCross-spec consistency checks (${groupCount} provider(s))...\n`);
 
-  // Priority 1: provider-level consistency
+  // Priority 1: provider-level consistency (majority-vote — no single spec is the oracle)
+  /** @param {string[]} arr @returns {string} */
+  function mostCommon(arr) {
+    /** @type {Record<string, number>} */ const counts = {};
+    for (const v of arr) counts[v] = (counts[v] || 0) + 1;
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+  }
+
   for (const [slug, entries] of loadedSchemas) {
     if (entries.length < 2) continue;
 
-    const ref = entries[0];
-    const refCountries = new Set(ref.schema.country_code);
-    const refCurrencies = new Set(ref.schema.currency);
-    const refApiVersion = ref.schema.provider_api_version;
-    const refSandbox = ref.schema.sandbox;
-    const refRel = path.relative(SPECS_ROOT, ref.specPath);
+    const ccSigs    = entries.map(({ schema: s }) => JSON.stringify([...s.country_code].sort()));
+    const curSigs   = entries.map(({ schema: s }) => JSON.stringify([...s.currency].sort()));
+    const apiVers   = entries.map(({ schema: s }) => s.provider_api_version);
+    const sandboxes = entries.map(({ schema: s }) => String(s.sandbox));
 
-    for (const { specPath, schema } of entries.slice(1)) {
+    const majCC      = mostCommon(ccSigs);
+    const majCur     = mostCommon(curSigs);
+    const majApiVer  = mostCommon(apiVers);
+    const majSandbox = mostCommon(sandboxes);
+
+    for (const { specPath, schema } of entries) {
       const rel = path.relative(SPECS_ROOT, specPath);
       /** @type {string[]} */ const errors = [];
+      const ccSig = JSON.stringify([...schema.country_code].sort());
+      const curSig = JSON.stringify([...schema.currency].sort());
 
-      if (!setsEqual(refCountries, new Set(schema.country_code))) {
+      if (ccSig !== majCC) {
         errors.push(
-          `[CROSS-SPEC] country_code diffère de ${refRel}: ` +
-          `attendu [${[...refCountries].sort().join(", ")}], reçu [${[...schema.country_code].sort().join(", ")}]`
+          `[CROSS-SPEC] country_code: [${[...schema.country_code].sort().join(", ")}] ` +
+          `(majoritaire: ${majCC})`
         );
       }
-      if (!setsEqual(refCurrencies, new Set(schema.currency))) {
+      if (curSig !== majCur) {
         errors.push(
-          `[CROSS-SPEC] currency diffère de ${refRel}: ` +
-          `attendu [${[...refCurrencies].sort().join(", ")}], reçu [${[...schema.currency].sort().join(", ")}]`
+          `[CROSS-SPEC] currency: [${[...schema.currency].sort().join(", ")}] ` +
+          `(majoritaire: ${majCur})`
         );
       }
-      if (schema.provider_api_version !== refApiVersion) {
+      if (schema.provider_api_version !== majApiVer) {
         errors.push(
-          `[CROSS-SPEC] provider_api_version diffère de ${refRel}: attendu "${refApiVersion}", reçu "${schema.provider_api_version}"`
+          `[CROSS-SPEC] provider_api_version: "${schema.provider_api_version}" (majoritaire: "${majApiVer}")`
         );
       }
-      if (schema.sandbox !== refSandbox) {
+      if (String(schema.sandbox) !== majSandbox) {
         errors.push(
-          `[CROSS-SPEC] sandbox diffère de ${refRel}: attendu ${refSandbox}, reçu ${schema.sandbox}`
+          `[CROSS-SPEC] sandbox: ${schema.sandbox} (majoritaire: ${majSandbox})`
         );
       }
 
       if (errors.length > 0) {
         errors.forEach((e) => console.error(`        ${e}`));
-        fail(rel, `Cohérence provider "${slug}" : ${errors.length} problème(s)`);
+        fail(specPath, `Incohérence provider "${slug}" : ${errors.length} champ(s) non-majoritaire(s)`);
         failures++;
       } else {
-        console.log(`  OK    ${rel} (cohérent avec ${refRel})`);
+        console.log(`  OK    ${rel} (cohérent avec le groupe "${slug}")`);
       }
     }
-    // Print OK for the reference spec too if group has 2+ entries
-    if (entries.length >= 2) console.log(`  OK    ${refRel} (référence pour "${slug}")`);
   }
 
   // Priority 2: country/currency coherence per spec
@@ -660,8 +670,9 @@ for (const specPath of specs) {
   if (!isSecurityOnly) {
     if (!validateStructure(specPath))  { failures++; continue; }
     if (!validateSchema(specPath))     { failures++; continue; }
+    if (!validateTypeScript(specPath)) { failures++; continue; }
 
-    // Collect for cross-spec checks (full run only)
+    // Collect for cross-spec checks — only after all per-spec checks pass
     if (!isChangedMode) {
       try {
         const schema = JSON.parse(fs.readFileSync(path.join(specPath, "schema.json"), "utf8"));
@@ -670,8 +681,6 @@ for (const specPath of specs) {
         loadedSchemas.get(slug).push({ specPath, schema });
       } catch { /* parse errors already caught by validateSchema */ }
     }
-
-    if (!validateTypeScript(specPath)) { failures++; continue; }
   }
 
   if (!runSecurityScan(specPath)) { failures++; continue; }
@@ -683,6 +692,8 @@ for (const specPath of specs) {
 if (isChangedMode || isSecurityOnly) {
   if (isChangedMode) {
     console.log("\n  NOTE  Cross-spec checks skippés (mode --changed ; lancez npm run validate pour les checks complets)");
+  } else {
+    console.log("\n  NOTE  Cross-spec checks skippés (mode --security-only)");
   }
 } else {
   const crossResult = runCrossSpecChecks(loadedSchemas);
