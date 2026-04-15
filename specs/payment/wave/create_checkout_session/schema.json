@@ -1,0 +1,150 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "create_checkout_session",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": ["SN", "CI", "ML", "GN", "UG"],
+  "currency": ["XOF", "GNF", "UGX"],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/checkout",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://api.wave.com/v1/checkout/sessions"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["amount", "currency", "error_url", "success_url"],
+    "properties": {
+      "amount": {
+        "type": "string",
+        "description": "Montant à collecter, en string. 0 à 2 décimales selon la devise. XOF n'accepte pas de décimales. Ex: \"5000\" ou \"1500.50\"."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217 en majuscules. Ex: \"XOF\", \"GNF\", \"UGX\"."
+      },
+      "error_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL HTTPS vers laquelle Wave redirige l'utilisateur en cas d'échec ou d'annulation du paiement."
+      },
+      "success_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL HTTPS vers laquelle Wave redirige l'utilisateur après un paiement réussi."
+      },
+      "client_reference": {
+        "type": "string",
+        "description": "Référence interne (max 255 chars) pour corréler la session avec votre système. Renvoyée dans la réponse et les webhooks."
+      },
+      "restrict_payer_mobile": {
+        "type": "string",
+        "description": "Numéro E.164 (ex: \"+221700000000\"). Si présent, seul ce compte Wave peut payer cette session."
+      },
+      "aggregated_merchant_id": {
+        "type": "string",
+        "description": "ID de marchand agrégé. Uniquement pour les plateformes ayant activé l'API Aggregated Merchants."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Identifiant unique de la session (préfixe \"cos-\", max 20 chars). Stocker avant de rediriger — requis pour verify_payment."
+      },
+      "wave_launch_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "URL à ouvrir dans le navigateur pour lancer le paiement Wave. Ne pas ouvrir dans une WebView."
+      },
+      "checkout_status": {
+        "type": "string",
+        "enum": ["open", "complete", "expired"],
+        "description": "État de la session de checkout."
+      },
+      "payment_status": {
+        "type": "string",
+        "enum": ["processing", "cancelled", "succeeded"],
+        "description": "État du paiement associé."
+      },
+      "amount": {
+        "type": "string",
+        "description": "Montant demandé."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217."
+      },
+      "client_reference": {
+        "type": "string",
+        "description": "Référence interne fournie à la création."
+      },
+      "business_name": {
+        "type": "string",
+        "description": "Nom du business affiché au payeur."
+      },
+      "transaction_id": {
+        "type": "string",
+        "description": "Identifiant de transaction Wave (visible dans l'app utilisateur). Absent si le paiement n'est pas encore complété."
+      },
+      "when_created": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC de création."
+      },
+      "when_expires": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC d'expiration. Par défaut : 30 minutes après création."
+      },
+      "when_completed": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC de complétion ou d'expiration. Absent si la session est encore ouverte."
+      },
+      "last_payment_error": {
+        "type": "object",
+        "description": "Dernière erreur de paiement. Présent uniquement si payment_status est processing ou cancelled.",
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Code d'erreur. Ex: request-validation-error, unauthorized-wallet, service-unavailable."
+      },
+      "message": {
+        "type": "string",
+        "description": "Description lisible de l'erreur."
+      }
+    }
+  },
+  "gotchas": [
+    "Stocker session.id immédiatement avant de rediriger l'utilisateur — c'est le seul identifiant pour appeler verify_payment côté serveur.",
+    "wave_launch_url doit être ouvert directement dans le navigateur de l'utilisateur. Ne jamais l'ouvrir dans une WebView ou un iframe — le paiement ne s'initiera pas correctement.",
+    "La session expire par défaut 30 minutes après création. Après expiration, checkout_status passe à 'expired' et le paiement est impossible.",
+    "amount est une string, pas un nombre. XOF n'accepte aucune décimale — envoyer \"5000\" et non \"5000.00\" ou 5000.",
+    "La clé API est liée à un seul wallet Wave. Pour opérer dans plusieurs pays, obtenir une clé par wallet.",
+    "Il n'y a pas d'environnement sandbox. Tous les appels touchent la production."
+  ]
+}

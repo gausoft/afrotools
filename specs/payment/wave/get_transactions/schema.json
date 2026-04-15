@@ -1,0 +1,149 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "get_transactions",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": ["SN", "CI", "ML", "GN", "UG"],
+  "currency": ["XOF", "GNF", "UGX"],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/balance-api",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://api.wave.com/v1/transactions"
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "date": {
+        "type": "string",
+        "description": "Date au format YYYY-MM-DD. Si absent, retourne les transactions du jour courant."
+      },
+      "after": {
+        "type": "string",
+        "description": "Curseur de pagination opaque. Passer la valeur end_cursor de la réponse précédente pour obtenir la page suivante."
+      },
+      "include_subaccounts": {
+        "type": "boolean",
+        "description": "Si true, inclut les transactions des sous-comptes."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "page_info": {
+        "type": "object",
+        "description": "Informations de pagination.",
+        "properties": {
+          "has_next_page": {
+            "type": "boolean",
+            "description": "true s'il reste des transactions à récupérer."
+          },
+          "end_cursor": {
+            "type": "string",
+            "description": "Curseur à passer comme paramètre after pour obtenir la page suivante."
+          },
+          "start_cursor": {
+            "type": ["string", "null"]
+          }
+        }
+      },
+      "date": {
+        "type": "string",
+        "description": "Date des transactions retournées, au format YYYY-MM-DD."
+      },
+      "items": {
+        "type": "array",
+        "description": "Liste de transactions, triées de la plus ancienne à la plus récente.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "timestamp": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Horodatage ISO 8601 UTC d'exécution de la transaction."
+            },
+            "transaction_id": {
+              "type": "string",
+              "description": "Identifiant unique de la transaction (max 20 chars)."
+            },
+            "transaction_type": {
+              "type": "string",
+              "enum": [
+                "merchant_payment",
+                "merchant_payment_refund",
+                "api_checkout",
+                "api_checkout_refund",
+                "api_payout",
+                "api_payout_reversal",
+                "bulk_payment",
+                "bulk_payment_reversal",
+                "b2b_payment",
+                "b2b_payment_reversal",
+                "merchant_sweep"
+              ],
+              "description": "Type de la transaction."
+            },
+            "amount": {
+              "type": "string",
+              "description": "Variation nette du solde (peut être négatif pour les débits)."
+            },
+            "fee": {
+              "type": "string",
+              "description": "Frais de la transaction."
+            },
+            "currency": {
+              "type": "string",
+              "description": "Code ISO 4217."
+            },
+            "is_reversal": {
+              "type": "boolean",
+              "description": "true si la transaction est un remboursement ou reversal."
+            },
+            "counterparty_name": {
+              "type": "string",
+              "description": "Nom de l'expéditeur ou du destinataire."
+            },
+            "counterparty_mobile": {
+              "type": "string",
+              "description": "Numéro de téléphone de la contrepartie."
+            },
+            "client_reference": {
+              "type": "string",
+              "description": "Référence interne fournie lors de la création du paiement."
+            },
+            "checkout_api_session_id": {
+              "type": "string",
+              "description": "ID de la session checkout associée (pour api_checkout)."
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": { "type": "string" },
+      "message": { "type": "string" }
+    }
+  },
+  "gotchas": [
+    "Les transactions sont retournées de la plus ancienne à la plus récente pour un jour donné. Pour récupérer les transactions les plus récentes en premier, il faut inverser le tableau côté client.",
+    "Sans paramètre date, Wave retourne uniquement les transactions du jour courant (UTC). Pour la réconciliation, toujours spécifier la date explicitement.",
+    "La pagination utilise des curseurs opaques (end_cursor), pas des offsets. Ne pas construire le curseur manuellement — utiliser uniquement la valeur retournée par l'API.",
+    "Pour récupérer toutes les transactions d'un jour, boucler tant que page_info.has_next_page === true en passant end_cursor comme paramètre after."
+  ]
+}

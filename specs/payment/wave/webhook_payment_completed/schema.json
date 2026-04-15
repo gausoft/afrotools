@@ -1,0 +1,91 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "webhook_payment_completed",
+  "capability_type": "webhook",
+  "status": "compliant",
+  "country_code": ["SN", "CI", "ML", "GN", "UG"],
+  "currency": ["XOF", "GNF", "UGX"],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/webhook",
+  "docs_public": true,
+  "auth": {
+    "type": "none"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "{your_webhook_url}"
+  },
+  "input_schema": {
+    "type": "object",
+    "description": "Payload que Wave POSTe à votre endpoint lors d'un événement checkout.session.completed.",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Identifiant unique de l'événement. Utiliser pour l'idempotence — Wave peut livrer le même événement plusieurs fois."
+      },
+      "type": {
+        "type": "string",
+        "enum": ["checkout.session.completed"],
+        "description": "Type de l'événement."
+      },
+      "data": {
+        "type": "object",
+        "description": "Objet checkout session complet au moment de l'événement.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifiant de la session (préfixe \"cos-\")."
+          },
+          "checkout_status": {
+            "type": "string",
+            "enum": ["complete"],
+            "description": "Toujours 'complete' pour cet événement."
+          },
+          "payment_status": {
+            "type": "string",
+            "enum": ["succeeded"],
+            "description": "Toujours 'succeeded' pour cet événement."
+          },
+          "amount": {
+            "type": "string",
+            "description": "Montant du paiement."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Code ISO 4217."
+          },
+          "transaction_id": {
+            "type": "string",
+            "description": "Identifiant de transaction Wave."
+          },
+          "client_reference": {
+            "type": "string",
+            "description": "Référence interne fournie à la création. Utiliser pour retrouver la commande dans votre système."
+          },
+          "when_completed": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Horodatage ISO 8601 UTC de complétion."
+          }
+        }
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "description": "Votre endpoint doit retourner HTTP 2xx dans les 5 secondes. Le corps de la réponse est ignoré par Wave."
+  },
+  "error_schema": {},
+  "gotchas": [
+    "Ne jamais fulfiller une commande sur la base du webhook seul. Appeler verify_payment (GET /v1/checkout/sessions/{id}) pour confirmer côté serveur — le payload webhook peut être forgé.",
+    "Répondre HTTP 200 immédiatement et traiter de façon asynchrone. Wave retry pendant 3 jours si votre endpoint ne répond pas dans les 5 secondes.",
+    "Implémenter l'idempotence via event.id — Wave peut livrer le même événement plusieurs fois. Vérifier que la commande n'est pas déjà fulfillée avant d'agir.",
+    "Vérifier la signature Wave-Signature en production : HMAC-SHA256 du timestamp + raw body. Utiliser le raw body, pas le JSON parsé — certains frameworks modifient le body entre réception et parsing.",
+    "[MUST TELL USER] Wave whitelisté 15 plages d'IPs qui envoient les webhooks. Si votre serveur filtre le trafic entrant, ajouter ces IPs dans votre firewall ou les webhooks échoueront silencieusement. La liste est disponible dans le Business Portal.",
+    "[MUST TELL USER] En développement local, Wave ne peut pas joindre localhost. Utiliser un tunnel HTTPS (ex: `ngrok http 3000`) et configurer l'URL ngrok dans le Business Portal avant de tester."
+  ]
+}

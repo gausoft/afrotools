@@ -1,0 +1,132 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "send_payout",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": ["SN", "CI", "ML", "GN", "UG"],
+  "currency": ["XOF", "GNF", "UGX"],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/payout",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://api.wave.com/v1/payout"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["currency", "receive_amount", "mobile"],
+    "properties": {
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217 en majuscules. Ex: \"XOF\", \"GNF\", \"UGX\"."
+      },
+      "receive_amount": {
+        "type": "string",
+        "description": "Montant que le destinataire reçoit, en string, sans décimales. Ex: \"5000\"."
+      },
+      "mobile": {
+        "type": "string",
+        "description": "Numéro de téléphone du destinataire au format E.164. Ex: \"+221700000000\"."
+      },
+      "name": {
+        "type": "string",
+        "description": "Nom du destinataire (max 255 chars). Utilisé pour la vérification si national_id est aussi fourni."
+      },
+      "national_id": {
+        "type": "string",
+        "description": "Numéro de pièce d'identité nationale du destinataire (max 255 chars). Optionnel."
+      },
+      "client_reference": {
+        "type": "string",
+        "description": "Référence interne (max 255 chars) pour corréler le payout avec votre système."
+      },
+      "payment_reason": {
+        "type": "string",
+        "description": "Motif du paiement visible par le destinataire (max 40 chars)."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Identifiant unique du payout (max 20 chars). Stocker pour pouvoir faire un reversal ou suivre le statut."
+      },
+      "status": {
+        "type": "string",
+        "enum": ["processing", "succeeded", "failed"],
+        "description": "État du payout. 'processing' signifie que le résultat n'est pas encore définitif."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217."
+      },
+      "receive_amount": {
+        "type": "string",
+        "description": "Montant reçu par le destinataire."
+      },
+      "fee": {
+        "type": "string",
+        "description": "Frais prélevés sur votre wallet."
+      },
+      "mobile": {
+        "type": "string",
+        "description": "Numéro E.164 du destinataire."
+      },
+      "name": {
+        "type": "string",
+        "description": "Nom du destinataire si fourni."
+      },
+      "client_reference": {
+        "type": "string",
+        "description": "Référence interne si fournie."
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC du payout."
+      },
+      "payout_error": {
+        "type": "object",
+        "description": "Présent uniquement si status est 'failed'.",
+        "properties": {
+          "error_code": { "type": "string" },
+          "error_message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Code d'erreur. Ex: insufficient-funds, recipient-account-blocked, idempotency-mismatch."
+      },
+      "message": {
+        "type": "string",
+        "description": "Description lisible de l'erreur."
+      }
+    }
+  },
+  "gotchas": [
+    "Chaque requête POST /v1/payout doit inclure un header Idempotency-Key unique (UUID v4 recommandé, max 255 chars). Sans cette clé, un retry en cas d'erreur réseau peut créer un payout en double.",
+    "Si le payout retourne status 'processing', ne pas le marquer comme échoué — le considérer comme pending et surveiller via GET /v1/payout/{id}. Marquer comme échoué trop tôt peut pousser l'utilisateur à retenter, causant un doublon.",
+    "En cas d'erreur 5xx, timeout ou connexion interrompue : retenter avec le MÊME Idempotency-Key et un backoff exponentiel. Wave garantit l'idempotence.",
+    "En cas d'erreur 'idempotency-mismatch' (409) : le même Idempotency-Key a été utilisé avec un body différent. Générer un nouveau key et retenter.",
+    "Le reversal d'un payout est limité à 3 jours après création. Après ce délai, POST /v1/payout/{id}/reverse retourne une erreur.",
+    "receive_amount est une string sans décimales pour XOF — envoyer \"5000\" et non 5000 ou \"5000.00\"."
+  ]
+}
