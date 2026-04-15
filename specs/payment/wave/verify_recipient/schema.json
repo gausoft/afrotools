@@ -7,8 +7,18 @@
   "capability": "verify_recipient",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/payout",
   "docs_public": true,
@@ -25,7 +35,9 @@
   },
   "input_schema": {
     "type": "object",
-    "required": ["mobile"],
+    "required": [
+      "mobile"
+    ],
     "properties": {
       "mobile": {
         "type": "string",
@@ -53,17 +65,36 @@
     "type": "object",
     "properties": {
       "within_limits": {
-        "type": ["boolean", "null"],
+        "type": [
+          "boolean",
+          "null"
+        ],
         "description": "true si le destinataire peut recevoir le montant demandé. null si amount n'a pas été fourni."
       },
       "name_match": {
-        "type": ["string", "null"],
-        "enum": ["MATCH", "NO_MATCH", "NAME_NOT_KNOWN", null],
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "MATCH",
+          "NO_MATCH",
+          "NAME_NOT_KNOWN",
+          null
+        ],
         "description": "Résultat de la comparaison du nom (algorithme Jaro-Winkler, seuil 0.65). NAME_NOT_KNOWN si le destinataire n'est pas KYC-2. null si name n'a pas été fourni."
       },
       "national_id_match": {
-        "type": ["string", "null"],
-        "enum": ["MATCH", "NO_MATCH", "ID_NOT_KNOWN", null],
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "MATCH",
+          "NO_MATCH",
+          "ID_NOT_KNOWN",
+          null
+        ],
         "description": "Résultat de la vérification de la pièce d'identité. null si national_id n'a pas été fourni."
       }
     }
@@ -78,11 +109,29 @@
       "message": {
         "type": "string",
         "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },
   "gotchas": [
-    "Limite de rate : 30 vérifications pour le même numéro dans une fenêtre de 5 minutes. Au-delà, ce numéro est bloqué pendant 60 minutes.",
+    "Limite de rate : 30 vérifications incluant une comparaison de nom (champ name fourni) pour le même numéro dans une fenêtre de 5 minutes. Au-delà, ce numéro est bloqué pendant 60 minutes. Les appels sans name ne sont pas soumis à cette limite.",
     "NAME_NOT_KNOWN ne signifie pas que le nom est incorrect — cela signifie que Wave n'a pas d'information légale sur ce destinataire (non KYC-2). Ne pas bloquer un payout sur cette base seule.",
     "La comparaison de nom utilise Jaro-Winkler avec un seuil de 0.65 — les variations orthographiques mineures (accents, abréviations) peuvent retourner MATCH.",
     "national_id_match nécessite une activation spécifique par Wave. Sans cette activation, le champ retourne toujours null même si national_id est fourni."

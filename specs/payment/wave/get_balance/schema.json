@@ -7,8 +7,18 @@
   "capability": "get_balance",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/balance-api",
   "docs_public": true,
@@ -55,6 +65,24 @@
       "message": {
         "type": "string",
         "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },

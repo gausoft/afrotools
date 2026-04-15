@@ -28,7 +28,10 @@ interface PayoutResponse {
   fee: string;
   mobile: string;
   name?: string;
+  national_id?: string;
   client_reference?: string;
+  payment_reason?: string;
+  aggregated_merchant_id?: string;
   timestamp: string;
   payout_error?: { error_code: string; error_message?: string };
 }

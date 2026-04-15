@@ -5,6 +5,8 @@
  * @capability_type asynchronous
  */
 
+import { randomUUID } from "crypto";
+
 const WAVE_API_KEY = process.env.WAVE_API_KEY;
 if (!WAVE_API_KEY) throw new Error("Missing env: WAVE_API_KEY");
 
@@ -46,13 +48,15 @@ interface WaveError {
 }
 
 export async function createPayoutBatch(
-  payouts: PayoutItem[]
+  payouts: PayoutItem[],
+  idempotencyKey: string = randomUUID()
 ): Promise<CreatePayoutBatchResponse> {
   const response = await fetch("https://api.wave.com/v1/payout-batch", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${WAVE_API_KEY}`,
       "Content-Type": "application/json",
+      "Idempotency-Key": idempotencyKey,
     },
     body: JSON.stringify({ payouts }),
   });

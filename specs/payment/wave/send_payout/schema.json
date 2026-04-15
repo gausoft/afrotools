@@ -7,8 +7,18 @@
   "capability": "send_payout",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/payout",
   "docs_public": true,
@@ -25,7 +35,11 @@
   },
   "input_schema": {
     "type": "object",
-    "required": ["currency", "receive_amount", "mobile"],
+    "required": [
+      "currency",
+      "receive_amount",
+      "mobile"
+    ],
     "properties": {
       "currency": {
         "type": "string",
@@ -66,11 +80,16 @@
     "properties": {
       "id": {
         "type": "string",
-        "description": "Identifiant unique du payout (max 20 chars). Stocker pour pouvoir faire un reversal ou suivre le statut."
+        "description": "Identifiant unique du payout (préfixe \"pt-\", max 20 chars). Stocker pour pouvoir faire un reversal ou suivre le statut via get_payout."
       },
       "status": {
         "type": "string",
-        "enum": ["processing", "succeeded", "failed", "reversed"],
+        "enum": [
+          "processing",
+          "succeeded",
+          "failed",
+          "reversed"
+        ],
         "description": "État du payout. 'processing' signifie que le résultat n'est pas encore définitif. 'reversed' indique que le payout a été annulé via POST /v1/payout/{id}/reverse."
       },
       "currency": {
@@ -106,8 +125,12 @@
         "type": "object",
         "description": "Présent uniquement si status est 'failed'.",
         "properties": {
-          "error_code": { "type": "string" },
-          "error_message": { "type": "string" }
+          "error_code": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          }
         }
       }
     }
@@ -122,6 +145,24 @@
       "message": {
         "type": "string",
         "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },

@@ -7,8 +7,18 @@
   "capability": "verify_payment",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/checkout",
   "docs_public": true,
@@ -25,7 +35,9 @@
   },
   "input_schema": {
     "type": "object",
-    "required": ["id"],
+    "required": [
+      "id"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -42,12 +54,21 @@
       },
       "checkout_status": {
         "type": "string",
-        "enum": ["open", "complete", "expired"],
-        "description": "État de la session. Vérifier que checkout_status est 'complete' ET payment_status est 'succeeded' avant de valider une commande."
+        "enum": [
+          "open",
+          "complete",
+          "expired",
+          "failed"
+        ],
+        "description": "État de la session. Vérifier que checkout_status est 'complete' ET payment_status est 'succeeded' avant de valider une commande. 'failed' peut apparaître dans le contexte du webhook checkout.session.payment_failed."
       },
       "payment_status": {
         "type": "string",
-        "enum": ["processing", "cancelled", "succeeded"],
+        "enum": [
+          "processing",
+          "cancelled",
+          "succeeded"
+        ],
         "description": "État du paiement."
       },
       "amount": {
@@ -89,8 +110,12 @@
         "type": "object",
         "description": "Dernière erreur de paiement. Présent si payment_status est processing ou cancelled.",
         "properties": {
-          "code": { "type": "string" },
-          "message": { "type": "string" }
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
         }
       }
     }
@@ -105,6 +130,24 @@
       "message": {
         "type": "string",
         "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },

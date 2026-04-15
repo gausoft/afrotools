@@ -7,8 +7,18 @@
   "capability": "get_payout",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/payout",
   "docs_public": true,
@@ -25,7 +35,9 @@
   },
   "input_schema": {
     "type": "object",
-    "required": ["id"],
+    "required": [
+      "id"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -38,11 +50,16 @@
     "properties": {
       "id": {
         "type": "string",
-        "description": "Identifiant unique du payout."
+        "description": "Identifiant unique du payout (préfixe \"pt-\", max 20 chars)."
       },
       "status": {
         "type": "string",
-        "enum": ["processing", "succeeded", "failed", "reversed"],
+        "enum": [
+          "processing",
+          "succeeded",
+          "failed",
+          "reversed"
+        ],
         "description": "État courant du payout."
       },
       "currency": {
@@ -90,8 +107,12 @@
         "type": "object",
         "description": "Présent uniquement si status est 'failed'.",
         "properties": {
-          "error_code": { "type": "string" },
-          "error_message": { "type": "string" }
+          "error_code": {
+            "type": "string"
+          },
+          "error_message": {
+            "type": "string"
+          }
         }
       }
     }
@@ -103,7 +124,27 @@
         "type": "string",
         "description": "Code d'erreur. Ex: not-found (404)."
       },
-      "message": { "type": "string" }
+      "message": {
+        "type": "string"
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "gotchas": [

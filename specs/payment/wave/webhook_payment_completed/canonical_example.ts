@@ -51,15 +51,21 @@ function verifyWaveSignature(
   secret: string
 ): boolean {
   // Format: "t=1234567890,v1=abc123..."
-  const parts: Record<string, string> = {};
+  // Pendant une rotation de secret, Wave envoie plusieurs valeurs v1= dans le même header.
+  // Utiliser un tableau pour toutes les capturer — ne pas écraser avec un simple map.
+  let timestamp: string | undefined;
+  const signatures: string[] = [];
+
   for (const part of signatureHeader.split(",")) {
-    const [key, value] = part.split("=");
-    if (key && value) parts[key] = value;
+    const eqIdx = part.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = part.slice(0, eqIdx);
+    const value = part.slice(eqIdx + 1);
+    if (key === "t") timestamp = value;
+    else if (key === "v1") signatures.push(value);
   }
 
-  const timestamp = parts["t"];
-  const signature = parts["v1"];
-  if (!timestamp || !signature) return false;
+  if (!timestamp || signatures.length === 0) return false;
 
   // Rejeter les requêtes de plus de 5 minutes
   const now = Math.floor(Date.now() / 1000);
@@ -67,14 +73,15 @@ function verifyWaveSignature(
 
   const payload = timestamp + rawBody;
   const expected = createHmac("sha256", secret).update(payload).digest("hex");
-
-  // timingSafeEqual throws si les buffers n'ont pas la même longueur.
-  // Vérifier d'abord la longueur pour éviter une exception sur signature malformée.
-  const sigBuf = Buffer.from(signature);
   const expBuf = Buffer.from(expected);
-  if (sigBuf.length !== expBuf.length) return false;
 
-  return timingSafeEqual(sigBuf, expBuf);
+  // Vérifier si l'une des signatures correspond (cas multi-signatures lors d'une rotation)
+  return signatures.some((sig) => {
+    const sigBuf = Buffer.from(sig);
+    // timingSafeEqual throws si longueurs différentes — vérifier d'abord
+    if (sigBuf.length !== expBuf.length) return false;
+    return timingSafeEqual(sigBuf, expBuf);
+  });
 }
 
 async function verifyPaymentServerSide(sessionId: string): Promise<CheckoutSession> {

@@ -15,6 +15,7 @@ interface CreateCheckoutSessionInput {
   success_url: string;
   client_reference?: string;
   restrict_payer_mobile?: string;
+  aggregated_merchant_id?: string;
 }
 
 interface CreateCheckoutSessionResponse {
@@ -27,6 +28,10 @@ interface CreateCheckoutSessionResponse {
   client_reference?: string;
   business_name: string;
   transaction_id?: string;
+  success_url: string;
+  error_url: string;
+  restrict_payer_mobile?: string;
+  aggregated_merchant_id?: string;
   when_created: string;
   when_expires: string;
   when_completed?: string;

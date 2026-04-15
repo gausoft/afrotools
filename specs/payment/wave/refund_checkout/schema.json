@@ -7,8 +7,18 @@
   "capability": "refund_checkout",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/checkout",
   "docs_public": true,
@@ -25,7 +35,9 @@
   },
   "input_schema": {
     "type": "object",
-    "required": ["id"],
+    "required": [
+      "id"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -47,12 +59,31 @@
       "message": {
         "type": "string",
         "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
       }
     }
   },
   "gotchas": [
     "Cet endpoint est idempotent — appeler refund deux fois sur la même session retourne HTTP 200 sans créer de remboursement en double.",
     "Seule une session avec payment_status 'succeeded' peut être remboursée. Appeler refund sur une session non complétée retourne une erreur.",
-    "Le remboursement est total — Wave ne supporte pas les remboursements partiels via cet endpoint."
+    "Le remboursement est total — Wave ne supporte pas les remboursements partiels via cet endpoint.",
+    "Alternative par transaction ID : si l'ID de session est perdu mais que le transaction_id Wave est connu, utiliser POST /v1/transactions/{transaction_id}/refund (Balance API) pour rembourser par transaction."
   ]
 }

@@ -7,8 +7,18 @@
   "capability": "get_transactions",
   "capability_type": "synchronous",
   "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG"],
-  "currency": ["XOF", "GNF", "UGX"],
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
   "sandbox": false,
   "docs_url": "https://docs.wave.com/balance-api",
   "docs_public": true,
@@ -37,6 +47,10 @@
       "include_subaccounts": {
         "type": "boolean",
         "description": "Si true, inclut les transactions des sous-comptes."
+      },
+      "first": {
+        "type": "integer",
+        "description": "Nombre maximum de transactions à retourner par page. Si absent, Wave retourne la page complète."
       }
     }
   },
@@ -56,7 +70,10 @@
             "description": "Curseur à passer comme paramètre after pour obtenir la page suivante."
           },
           "start_cursor": {
-            "type": ["string", "null"]
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -160,6 +177,30 @@
             "government_tax_amount": {
               "type": "string",
               "description": "Montant de taxe gouvernementale appliqué (Sénégal uniquement)."
+            },
+            "government_tax_paid_by_wave": {
+              "type": "string",
+              "description": "Montant de taxe pris en charge par Wave (Sénégal uniquement)."
+            },
+            "business_user_name": {
+              "type": "string",
+              "description": "Nom de l'agent ou du dépositaire associé à la transaction."
+            },
+            "business_user_mobile": {
+              "type": "string",
+              "description": "Numéro de téléphone de l'agent ou du dépositaire."
+            },
+            "employee_id": {
+              "type": "string",
+              "description": "Identifiant employé associé à la transaction."
+            },
+            "aggregated_merchant_name": {
+              "type": "string",
+              "description": "Nom du marchand agrégé si applicable."
+            },
+            "submerchant_name": {
+              "type": "string",
+              "description": "Nom du sous-compte si include_subaccounts est activé."
             }
           }
         }
@@ -169,8 +210,30 @@
   "error_schema": {
     "type": "object",
     "properties": {
-      "code": { "type": "string" },
-      "message": { "type": "string" }
+      "code": {
+        "type": "string"
+      },
+      "message": {
+        "type": "string"
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
     }
   },
   "gotchas": [

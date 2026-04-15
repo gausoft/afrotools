@@ -11,6 +11,7 @@ if (!WAVE_API_KEY) throw new Error("Missing env: WAVE_API_KEY");
 interface GetTransactionsInput {
   date?: string;
   after?: string;
+  first?: number;
   include_subaccounts?: boolean;
 }
 
@@ -45,6 +46,12 @@ interface Transaction {
   custom_fields?: Record<string, unknown>;
   submerchant_id?: string;
   government_tax_amount?: string;
+  government_tax_paid_by_wave?: string;
+  business_user_name?: string;
+  business_user_mobile?: string;
+  employee_id?: string;
+  aggregated_merchant_name?: string;
+  submerchant_name?: string;
 }
 
 interface TransactionsResponse {
@@ -68,6 +75,7 @@ export async function getTransactions(
   const url = new URL("https://api.wave.com/v1/transactions");
   if (input.date) url.searchParams.set("date", input.date);
   if (input.after) url.searchParams.set("after", input.after);
+  if (input.first) url.searchParams.set("first", String(input.first));
   if (input.include_subaccounts) url.searchParams.set("include_subaccounts", "true");
 
   const response = await fetch(url.toString(), {
