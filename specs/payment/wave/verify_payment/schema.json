@@ -1,0 +1,159 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "verify_payment",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/checkout",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://api.wave.com/v1/checkout/sessions/{id}"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "id"
+    ],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Identifiant de la session de checkout (préfixe \"cos-\"). Récupéré depuis la réponse de create_checkout_session."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Identifiant unique de la session."
+      },
+      "checkout_status": {
+        "type": "string",
+        "enum": [
+          "open",
+          "complete",
+          "expired",
+          "failed"
+        ],
+        "description": "État de la session. Vérifier que checkout_status est 'complete' ET payment_status est 'succeeded' avant de valider une commande. 'failed' peut apparaître dans le contexte du webhook checkout.session.payment_failed."
+      },
+      "payment_status": {
+        "type": "string",
+        "enum": [
+          "processing",
+          "cancelled",
+          "succeeded"
+        ],
+        "description": "État du paiement."
+      },
+      "amount": {
+        "type": "string",
+        "description": "Montant demandé."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217."
+      },
+      "transaction_id": {
+        "type": "string",
+        "description": "Identifiant de transaction Wave. Présent uniquement si le paiement a été initié."
+      },
+      "client_reference": {
+        "type": "string",
+        "description": "Référence interne fournie à la création."
+      },
+      "business_name": {
+        "type": "string",
+        "description": "Nom du business affiché au payeur."
+      },
+      "when_created": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC de création."
+      },
+      "when_expires": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC d'expiration."
+      },
+      "when_completed": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Horodatage ISO 8601 UTC de complétion. Absent si la session est encore ouverte."
+      },
+      "last_payment_error": {
+        "type": "object",
+        "description": "Dernière erreur de paiement. Présent si payment_status est processing ou cancelled.",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Code d'erreur. Ex: checkout-session-not-found, unauthorized-wallet."
+      },
+      "message": {
+        "type": "string",
+        "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Toujours vérifier côté serveur avant de valider une commande — ne jamais se fier uniquement au success_url ou au webhook. Un utilisateur peut manipuler la redirection.",
+    "Vérifier les DEUX champs : checkout_status === 'complete' ET payment_status === 'succeeded'. Un checkout_status 'complete' avec payment_status 'cancelled' signifie que le paiement a échoué.",
+    "verify_payment est aussi le mécanisme de récupération si le webhook n'a pas été reçu (timeout, serveur indisponible, redémarrage)."
+  ]
+}

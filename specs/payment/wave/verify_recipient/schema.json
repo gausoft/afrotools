@@ -1,0 +1,139 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "verify_recipient",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/payout",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://api.wave.com/v1/verify_recipient"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": [
+      "mobile"
+    ],
+    "properties": {
+      "mobile": {
+        "type": "string",
+        "description": "Numéro de téléphone du destinataire au format E.164. Ex: \"+221700000000\"."
+      },
+      "name": {
+        "type": "string",
+        "description": "Nom attendu du destinataire. Si fourni, Wave retourne name_match indiquant si le nom correspond."
+      },
+      "national_id": {
+        "type": "string",
+        "description": "Numéro de pièce d'identité nationale attendu. Retourne national_id_match si fourni."
+      },
+      "amount": {
+        "type": "string",
+        "description": "Montant prévu du payout. Si fourni, Wave retourne within_limits indiquant si le destinataire peut recevoir ce montant."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217. Requis si amount est fourni."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "within_limits": {
+        "type": [
+          "boolean",
+          "null"
+        ],
+        "description": "true si le destinataire peut recevoir le montant demandé. null si amount n'a pas été fourni."
+      },
+      "name_match": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "MATCH",
+          "NO_MATCH",
+          "NAME_NOT_KNOWN",
+          null
+        ],
+        "description": "Résultat de la comparaison du nom (algorithme Jaro-Winkler, seuil 0.65). NAME_NOT_KNOWN si le destinataire n'est pas KYC-2. null si name n'a pas été fourni."
+      },
+      "national_id_match": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "MATCH",
+          "NO_MATCH",
+          "ID_NOT_KNOWN",
+          null
+        ],
+        "description": "Résultat de la vérification de la pièce d'identité. null si national_id n'a pas été fourni."
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Code d'erreur. Ex: too-many-requests si la limite de 30 vérifications par 5 min est dépassée."
+      },
+      "message": {
+        "type": "string",
+        "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Limite de rate : 30 vérifications incluant une comparaison de nom (champ name fourni) pour le même numéro dans une fenêtre de 5 minutes. Au-delà, ce numéro est bloqué pendant 60 minutes. Les appels sans name ne sont pas soumis à cette limite.",
+    "NAME_NOT_KNOWN ne signifie pas que le nom est incorrect — cela signifie que Wave n'a pas d'information légale sur ce destinataire (non KYC-2). Ne pas bloquer un payout sur cette base seule.",
+    "La comparaison de nom utilise Jaro-Winkler avec un seuil de 0.65 — les variations orthographiques mineures (accents, abréviations) peuvent retourner MATCH.",
+    "national_id_match nécessite une activation spécifique par Wave. Sans cette activation, le champ retourne toujours null même si national_id est fourni."
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "wave",
+  "provider_name": "Wave",
+  "provider_api_version": "2024-03-29",
+  "category": "payment",
+  "capability": "get_balance",
+  "capability_type": "synchronous",
+  "status": "compliant",
+  "country_code": [
+    "SN",
+    "CI",
+    "ML",
+    "GN",
+    "UG"
+  ],
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX"
+  ],
+  "sandbox": false,
+  "docs_url": "https://docs.wave.com/balance-api",
+  "docs_public": true,
+  "auth": {
+    "type": "api_key",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {token}",
+    "env_var": "WAVE_API_KEY"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://api.wave.com/v1/balance"
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "include_subaccounts": {
+        "type": "boolean",
+        "description": "Si true, inclut les soldes des sous-comptes dans le total retourné."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "amount": {
+        "type": "string",
+        "description": "Solde actuel du wallet en string. Peut être négatif si le wallet est en débit."
+      },
+      "currency": {
+        "type": "string",
+        "description": "Code ISO 4217 du wallet. Ex: \"XOF\"."
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "code": {
+        "type": "string",
+        "description": "Code d'erreur. Ex: unauthorized-wallet, disabled-wallet."
+      },
+      "message": {
+        "type": "string",
+        "description": "Description lisible de l'erreur."
+      },
+      "details": {
+        "type": "array",
+        "description": "Détails de validation retournés sur request-validation-error. Chaque entrée contient loc (localisation du champ), msg (message), type (type d erreur).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "loc": {
+              "type": "string"
+            },
+            "msg": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "La clé API est liée à un seul wallet. Pour consulter le solde de plusieurs wallets (multi-pays), obtenir une clé API par wallet et appeler cet endpoint une fois par clé.",
+    "amount est retourné en string et peut être négatif en cas de débit. Toujours parser en nombre avant d'effectuer des comparaisons."
+  ]
+}
