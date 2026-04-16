@@ -1,0 +1,52 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "nimbasms",
+  "provider_name": "NimbaSMS",
+  "provider_api_version": "2024-01-01",
+  "category": "sms",
+  "capability": "get_balance",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "country_code": ["GN"],
+  "currency": ["GNF"],
+  "sandbox": false,
+  "docs_url": "https://developers.nimbasms.com/",
+  "docs_public": true,
+  "auth": {
+    "type": "basic",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Basic {base64(NIMBASMS_SERVICE_ID:NIMBASMS_SECRET_TOKEN)}",
+    "env_var": "NIMBASMS_SERVICE_ID"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://api.nimbasms.com/v1/accounts"
+  },
+  "input_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "balance": {
+        "type": "number",
+        "description": "Solde disponible sur le compte en unités SMS ou en monnaie locale."
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "detail": {
+        "type": "string",
+        "description": "Erreur générale (ex: 401 unauthorized)."
+      }
+    }
+  },
+  "gotchas": [
+    "Vérifier le solde avant tout envoi groupé — un solde insuffisant entraîne un rejet silencieux de certains messages sans notification d'erreur globale.",
+    "La structure exacte de la réponse (nom du champ solde, type numérique ou string) n'est pas documentée publiquement. Inspecter la réponse brute lors de l'intégration pour confirmer les noms de champs."
+  ]
+}

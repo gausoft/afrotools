@@ -1,0 +1,135 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "nimbasms",
+  "provider_name": "NimbaSMS",
+  "provider_api_version": "2024-01-01",
+  "category": "sms",
+  "capability": "send_verification",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "country_code": ["GN"],
+  "currency": ["GNF"],
+  "sandbox": false,
+  "docs_url": "https://developers.nimbasms.com/",
+  "docs_public": true,
+  "auth": {
+    "type": "basic",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Basic {base64(NIMBASMS_SERVICE_ID:NIMBASMS_SECRET_TOKEN)}",
+    "env_var": "NIMBASMS_SERVICE_ID"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://api.nimbasms.com/v1/verifications"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["to"],
+    "properties": {
+      "to": {
+        "type": "string",
+        "description": "Numéro de téléphone du destinataire au format E.164 (ex: +224XXXXXXXXX)."
+      },
+      "message": {
+        "type": "string",
+        "description": "Modèle du message. Doit contenir le placeholder <1234> qui sera remplacé par le code généré. Défaut: 'Code de vérification : <1234>'."
+      },
+      "sender_name": {
+        "type": "string",
+        "description": "Nom de l'expéditeur (case-sensitive). Défaut: 'SMS 9080'."
+      },
+      "expiry_time": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 30,
+        "description": "Durée de validité du code en minutes. Entre 5 et 30 (inclus)."
+      },
+      "attempts": {
+        "type": "integer",
+        "minimum": 3,
+        "maximum": 10,
+        "description": "Nombre maximum de tentatives avant expiration du code. Entre 3 et 10 (inclus)."
+      },
+      "code_length": {
+        "type": "integer",
+        "minimum": 4,
+        "maximum": 8,
+        "default": 4,
+        "description": "Longueur du code généré. Entre 4 et 8 (inclus). Défaut: 4."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identifiant unique de la vérification. À conserver pour appeler verify_code."
+      },
+      "to": {
+        "type": "string",
+        "description": "Numéro destinataire de la vérification."
+      },
+      "status": {
+        "type": "string",
+        "description": "Statut de la vérification (ex: pending)."
+      },
+      "expiry_time": {
+        "type": "integer",
+        "description": "Durée de validité du code en minutes."
+      },
+      "attempts": {
+        "type": "integer",
+        "description": "Nombre de tentatives restantes."
+      },
+      "code_length": {
+        "type": "integer",
+        "description": "Longueur du code généré."
+      },
+      "message_cost": {
+        "type": "integer",
+        "readOnly": true,
+        "description": "Nombre de SMS consommés. Toujours 1 pour les vérifications."
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "detail": {
+        "type": "string",
+        "description": "Erreur générale (ex: 401 unauthorized)."
+      },
+      "to": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Erreurs de validation sur le champ 'to'."
+      },
+      "expiry_time": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Erreurs de validation sur le champ 'expiry_time' (valeur hors plage 5-30)."
+      },
+      "attempts": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Erreurs de validation sur le champ 'attempts' (valeur hors plage 3-10)."
+      },
+      "code_length": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Erreurs de validation sur le champ 'code_length' (valeur hors plage 4-8)."
+      }
+    }
+  },
+  "gotchas": [
+    "Le placeholder <1234> dans le champ 'message' est obligatoire — sans lui, le code généré ne sera pas inclus dans le SMS reçu par l'utilisateur. Le texte autour du placeholder est libre.",
+    "Stocker l'id retourné côté serveur pour appeler verify_code. Ne jamais exposer cet id côté client car il suffit de le connaître pour tenter la vérification.",
+    "expiry_time doit être entre 5 et 30 (inclus) et attempts entre 3 et 10 (inclus). Les valeurs hors plage retournent une erreur 400 avec le nom du champ comme clé (ex: {\"expiry_time\": [\"...\"]}).",
+    "sender_name est case-sensitive. Le défaut 'SMS 9080' doit être reproduit à l'identique si utilisé explicitement. Utiliser list_sendernames pour récupérer les valeurs exactes des noms approuvés.",
+    "Le champ 'to' attend le numéro en format E.164 avec le '+' (ex: +224XXXXXXXXX), contrairement à send_message qui attend le format local sans '+'.",
+    "Les champs expiry_time et attempts sont envoyés à null quand non fournis. Certaines erreurs 400 peuvent provenir de la réception de null sur un champ qui n'accepte pas cette valeur."
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "spec_version": "1.0",
+  "provider_slug": "nimbasms",
+  "provider_name": "NimbaSMS",
+  "provider_api_version": "2024-01-01",
+  "category": "sms",
+  "capability": "verify_code",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "country_code": ["GN"],
+  "currency": ["GNF"],
+  "sandbox": false,
+  "docs_url": "https://developers.nimbasms.com/",
+  "docs_public": true,
+  "auth": {
+    "type": "basic",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Basic {base64(NIMBASMS_SERVICE_ID:NIMBASMS_SECRET_TOKEN)}",
+    "env_var": "NIMBASMS_SERVICE_ID"
+  },
+  "endpoint": {
+    "method": "PATCH",
+    "url": "https://api.nimbasms.com/v1/verifications/{id}"
+  },
+  "input_schema": {
+    "type": "object",
+    "required": ["id", "code"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identifiant de la vérification retourné par send_verification."
+      },
+      "code": {
+        "type": "string",
+        "description": "Code saisi par l'utilisateur à vérifier."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Identifiant de la vérification."
+      },
+      "status": {
+        "type": "string",
+        "description": "Statut de la vérification après tentative (ex: approved, expired, failed)."
+      },
+      "to": {
+        "type": "string",
+        "description": "Numéro téléphone associé à la vérification."
+      },
+      "message_cost": {
+        "type": "integer",
+        "readOnly": true,
+        "description": "Nombre de SMS consommés. Toujours 1 pour les vérifications."
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "properties": {
+      "detail": {
+        "type": "string",
+        "description": "Erreur générale (ex: code invalide, vérification expirée, not found)."
+      },
+      "code": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Erreurs de validation sur le champ 'code'."
+      }
+    }
+  },
+  "gotchas": [
+    "Chaque appel erroné à verify_code décrémente le compteur de tentatives. Une fois épuisé, la vérification expire définitivement — il faudra en créer une nouvelle via send_verification.",
+    "Ne jamais retransmettre le code saisi par l'utilisateur vers le client avant vérification. Appeler cet endpoint côté serveur uniquement.",
+    "Un status 'approved' doit être validé immédiatement côté serveur et ne pas être mis en cache côté client — le même id ne peut pas être réutilisé pour une seconde vérification."
+  ]
+}
