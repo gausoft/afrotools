@@ -6,7 +6,7 @@
   "category": "sms",
   "capability": "create_contact",
   "capability_type": "synchronous",
-  "status": "draft",
+  "status": "compliant",
   "country_code": ["GN"],
   "currency": ["GNF"],
   "sandbox": false,
