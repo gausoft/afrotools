@@ -21,7 +21,7 @@
     "method": "GET",
     "url": "https://mapaycard.com/epay/{c}/{ref}/status"
   },
-  "example_prompt": "Verify a Paycard payment status server-side using the operation_reference before fulfilling an order — never rely solely on the callback URL.",
+  "example_prompt": "Write a Node.js function that verifies a Paycard payment server-side using an operation_reference. Return the payment status and call this before fulfilling any order — never rely on the callback URL alone.",
   "input_schema": {
     "type": "object",
     "required": [

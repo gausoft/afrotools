@@ -18,7 +18,7 @@
     "method": "POST",
     "url": "https://your-app.com/webhooks/sms-status"
   },
-  "example_prompt": "Handle an incoming NimbaSMS webhook to receive delivery status updates for previously sent messages.",
+  "example_prompt": "Write an Express route POST /webhooks/nimbasms that receives NimbaSMS delivery status updates and persists the final delivery state for each message ID.",
   "input_schema": {
     "type": "object",
     "required": [

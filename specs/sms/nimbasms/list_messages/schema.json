@@ -21,7 +21,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/messages"
   },
-  "example_prompt": "List messages sent via NimbaSMS, optionally filtered by date range or status.",
+  "example_prompt": "Write a Node.js function that lists NimbaSMS messages sent within a date range. Use this to audit outbound SMS.",
   "input_schema": {
     "type": "object",
     "properties": {

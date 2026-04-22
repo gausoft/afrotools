@@ -27,7 +27,7 @@
     "method": "POST",
     "url": "https://api.wave.com/v1/checkout/sessions"
   },
-  "example_prompt": "Create a Wave checkout session for a payment, redirect the user to the wave_launch_url, and listen for the webhook to confirm completion.",
+  "example_prompt": "Write a Node.js function that creates a Wave checkout session. It receives an amount, currency, and success URL, calls Wave's API, and returns the wave_launch_url to redirect the user to.",
   "input_schema": {
     "type": "object",
     "required": [

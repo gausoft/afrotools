@@ -21,7 +21,7 @@
     "method": "POST",
     "url": "https://api.nimbasms.com/v1/verifications"
   },
-  "example_prompt": "Send a one-time OTP code to a user's phone number via NimbaSMS for authentication purposes.",
+  "example_prompt": "Write a Node.js function that sends an OTP to a user's phone number via NimbaSMS. It returns the verification ID needed to call verify_code.",
   "input_schema": {
     "type": "object",
     "required": [

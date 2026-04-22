@@ -27,7 +27,7 @@
     "method": "POST",
     "url": "https://api.wave.com/v1/checkout/sessions/{id}/expire"
   },
-  "example_prompt": "Expire an active Wave checkout session before its natural 30-minute timeout to cancel a pending payment.",
+  "example_prompt": "Write a Node.js function that expires an active Wave checkout session by its session ID. Use this when a user abandons the payment flow and you need to cancel the pending session.",
   "input_schema": {
     "type": "object",
     "required": [

@@ -27,7 +27,7 @@
     "method": "POST",
     "url": "https://api.wave.com/v1/checkout/sessions/{id}/refund"
   },
-  "example_prompt": "Initiate a refund for a completed Wave checkout session and confirm the refund status.",
+  "example_prompt": "Write a Node.js function that refunds a completed Wave checkout session. It receives the session ID and calls Wave's refund endpoint.",
   "input_schema": {
     "type": "object",
     "required": [

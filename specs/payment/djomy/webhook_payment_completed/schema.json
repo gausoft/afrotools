@@ -17,7 +17,7 @@
     "method": "POST",
     "url": "{your_webhook_url}"
   },
-  "example_prompt": "Handle an incoming Djomy webhook event confirming payment completion and trigger order fulfillment.",
+  "example_prompt": "Write an Express route POST /webhooks/djomy that receives a Djomy payment completion webhook, extracts the payment reference, and triggers order fulfillment.",
   "input_schema": {
     "type": "object",
     "description": "Payload Djomy POSTs to your webhook URL when a payment event occurs.",

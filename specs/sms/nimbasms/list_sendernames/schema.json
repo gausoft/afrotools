@@ -21,7 +21,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/sendernames"
   },
-  "example_prompt": "Retrieve all approved sender names available for the NimbaSMS account before sending a message.",
+  "example_prompt": "Write a Node.js function that retrieves the approved sender names for the NimbaSMS account. Always call this first to pick a valid sender_name before sending a message.",
   "input_schema": {
     "type": "object",
     "properties": {

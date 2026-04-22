@@ -27,7 +27,7 @@
     "method": "GET",
     "url": "https://api.wave.com/v1/checkout/sessions/search"
   },
-  "example_prompt": "Search Wave checkout sessions by date range or status to reconcile payments.",
+  "example_prompt": "Write a Node.js function that searches Wave checkout sessions by date range and status. Use this to reconcile daily payments.",
   "input_schema": {
     "type": "object",
     "required": [

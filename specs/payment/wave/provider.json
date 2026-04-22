@@ -4,5 +4,5 @@
   "category": "payment",
   "country_code": ["SN", "CI", "ML", "GN", "UG", "BF", "GM", "NE", "CM", "SL", "CD"],
   "description": "Wave is a mobile money operator active in 11 African countries offering checkout sessions for e-commerce payments and batch payouts via a REST API.",
-  "example_prompt": "Use Wave to create a checkout session for an e-commerce payment, redirect the user to the Wave payment page, and confirm the transaction via webhook before fulfilling the order."
+  "example_prompt": "Integrate Wave payments into my e-commerce app. Write a flow that creates a checkout session for a given amount, redirects the user to the Wave payment page, and handles the webhook to verify payment completion before fulfilling the order."
 }

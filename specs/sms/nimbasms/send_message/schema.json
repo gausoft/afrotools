@@ -21,7 +21,7 @@
     "method": "POST",
     "url": "https://api.nimbasms.com/v1/messages"
   },
-  "example_prompt": "Send an SMS to one or more Guinean phone numbers via NimbaSMS, specifying the sender name and message content.",
+  "example_prompt": "Write a Node.js function that sends an SMS via NimbaSMS. It receives a recipient phone number, message text, and sender name, and returns the message ID for delivery tracking.",
   "input_schema": {
     "type": "object",
     "required": [

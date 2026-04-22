@@ -21,7 +21,7 @@
     "method": "GET",
     "url": "https://sandbox-api.djomy.africa/v1/links/{reference}"
   },
-  "example_prompt": "Retrieve the current status and details of a Djomy payment link by its ID to check if it has been paid.",
+  "example_prompt": "Write a Node.js function that checks whether a Djomy payment link has been paid. It receives a link ID, calls get_payment_link, and returns the current status.",
   "input_schema": {
     "type": "object",
     "required": [

@@ -21,7 +21,7 @@
     "method": "POST",
     "url": "https://api.nimbasms.com/v1/contacts"
   },
-  "example_prompt": "Create a new contact in the NimbaSMS address book for use in future messaging campaigns.",
+  "example_prompt": "Write a Node.js function that adds a contact to the NimbaSMS address book. It receives a name and phone number and saves them for use in future messaging campaigns.",
   "input_schema": {
     "type": "object",
     "required": [
