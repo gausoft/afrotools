@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "lengopay",
-  "provider_name": "LengoPay",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "get_balance",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
-  "sandbox": false,
-  "docs_url": "",
-  "docs_public": false,
   "auth": {
     "type": "api_key",
     "location": "header",
@@ -27,6 +18,7 @@
     "method": "GET",
     "url": "https://portal.lengopay.com/api/getbalance/{websiteId}"
   },
+  "example_prompt": "Check my LengoPay account balance.",
   "input_schema": {
     "type": "object",
     "required": [

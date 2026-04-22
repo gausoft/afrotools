@@ -1,17 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "get_balance",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
-  "sandbox": false,
-  "docs_url": "https://developers.nimbasms.com/",
-  "docs_public": true,
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "auth": {
     "type": "basic",
     "location": "header",
@@ -23,6 +18,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/accounts"
   },
+  "example_prompt": "Check my NimbaSMS credit balance.",
   "input_schema": {
     "type": "object",
     "properties": {}

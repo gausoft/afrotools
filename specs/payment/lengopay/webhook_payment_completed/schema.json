@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "lengopay",
-  "provider_name": "LengoPay",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "webhook_payment_completed",
   "capability_type": "webhook",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
-  "sandbox": false,
-  "docs_url": "",
-  "docs_public": false,
   "auth": {
     "type": "none"
   },
@@ -23,6 +14,7 @@
     "method": "POST",
     "url": "{your_callback_url}"
   },
+  "example_prompt": "Add a LengoPay webhook handler to automatically confirm orders when payment completes.",
   "input_schema": {
     "type": "object",
     "description": "Payload que LengoPay POSTe à votre callback_url lorsqu'un paiement est traité.",

@@ -18,16 +18,44 @@ It is not a wrapper. It is not an SDK. It is a declarative description.
 ## Folder structure
 
 ```
-specs/{category}/{provider_slug}/{capability}/
-    schema.json
-    canonical_example.ts
+specs/{category}/{provider_slug}/
+├── provider.json              ← provider-level metadata
+└── {capability}/
+    ├── schema.json            ← capability spec
+    └── canonical_example.ts   ← working TypeScript example
 ```
 
 **category** — `payment` or `sms` (extensible to other categories)
 **provider_slug** — lowercase, no spaces, no dashes (e.g. `paycard`, `wave`, `nimbasms`)
 **capability** — snake_case verb (e.g. `create_payment`, `verify_payment`, `send_otp`)
 
-Every spec folder must contain exactly these two files. Nothing else.
+Every capability folder must contain exactly these two files. Nothing else.
+
+---
+
+## provider.json — required fields
+
+One `provider.json` per provider directory. Carries provider-level metadata migrated from `schema.json`.
+
+```json
+{
+  "slug": "paycard",
+  "name": "Paycard",
+  "category": "payment",
+  "country_code": ["GN"],
+  "description": "Paycard is a Guinean mobile money payment gateway that lets you accept payments via MTN, Orange, and Cellcom mobile wallets.",
+  "example_prompt": "Integrate Paycard to accept mobile money payments in Guinea. Create a payment, extract the operation_reference, and verify the transaction server-side before fulfilling the order."
+}
+```
+
+| Field | Type | Rule |
+|---|---|---|
+| slug | string | Lowercase, no spaces, no dashes — matches the directory name |
+| name | string | Display name of the provider |
+| category | string | `"payment"` or `"sms"` |
+| country_code | string[] | ISO 3166-1 alpha-2 codes — non-empty array |
+| description | string | One-sentence description of the provider for display and MCP context |
+| example_prompt | string | Full-flow usage prompt for AI agents — describes a complete integration scenario |
 
 ---
 
@@ -36,27 +64,26 @@ Every spec folder must contain exactly these two files. Nothing else.
 ```json
 {
   "spec_version": "1.0",
-  "provider_slug": "paycard",
-  "provider_name": "Paycard",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "create_payment",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
+  "status": "ready",
   "currency": ["GNF"],
   "sandbox": false,
   "docs_url": "https://paycard.com/docs/create-payment",
+  "docs_public": false,
   "auth": {
     "type": "api_key",
-    "header": "X-Api-Key",
+    "location": "body",
+    "field": "c",
     "format": "{token}",
     "env_var": "PAYCARD_API_KEY"
   },
   "endpoint": {
     "method": "POST",
-    "url": "https://api.paycard.com/v1/payments"
+    "url": "https://mapaycard.com/epay/create/"
   },
+  "example_prompt": "Initiate a Paycard mobile money payment for a given amount in GNF, extract the operation_reference from the response, and store it immediately before redirecting the user.",
   "input_schema": {},
   "response_schema": {},
   "error_schema": {},
@@ -71,17 +98,23 @@ Every spec folder must contain exactly these two files. Nothing else.
 | Field | Type | Rule |
 |---|---|---|
 | spec_version | string | Always "1.0" |
-| provider_slug | string | Lowercase, no dashes, no spaces |
 | provider_api_version | string | YYYY-MM-DD if provider has no version string |
+| capability | string | snake_case — matches the directory name |
 | capability_type | enum | `synchronous`, `asynchronous`, or `webhook` |
-| status | enum | `draft`, `compliant`, `verified`, `deprecated`, `archived` |
-| country_code | string[] | ISO 3166-1 alpha-2 codes |
+| status | enum | `draft`, `ready`, `verified`, `deprecated`, `archived` |
 | currency | string[] | ISO 4217 codes |
 | sandbox | boolean | true if provider has a sandbox environment |
-| gotchas | string[] | MANDATORY — minimum 1 entry, no exceptions |
+| docs_url | string | Can be `""` — provider has no public docs URL |
+| docs_public | boolean | false if provider does not publish API docs publicly |
+| auth | object | Auth descriptor — see auth variants below |
+| endpoint | object | `{ method, url }` |
+| example_prompt | string | Required for `ready`/`verified` — describes this specific capability usage for AI agents |
 | input_schema | object | JSON Schema describing the request body |
 | response_schema | object | JSON Schema describing the success response |
 | error_schema | object | JSON Schema describing the error response |
+| gotchas | string[] | MANDATORY — minimum 1 entry, no exceptions |
+
+**Fields NOT in schema.json** (migrated to provider.json): `provider_slug`, `provider_name`, `category`, `country_code`.
 
 ### capability_type definitions
 
@@ -137,13 +170,12 @@ interface PaycardError {
 export async function createPayment(
   input: CreatePaymentInput
 ): Promise<CreatePaymentResponse> {
-  const response = await fetch("https://api.paycard.com/v1/payments", {
+  const response = await fetch("https://mapaycard.com/epay/create/", {
     method: "POST",
     headers: {
-      "X-Api-Key": PAYCARD_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, c: PAYCARD_API_KEY }),
   });
 
   if (!response.ok) {
@@ -164,7 +196,7 @@ const payment = await createPayment({
   callback_url: "https://myapp.com/callback",
 });
 
-// Redirect user to payment.payment_url
+// Store payment.operation_reference immediately
 // Always verify payment status server-side before fulfilling the order
 */
 ```
@@ -181,21 +213,23 @@ const payment = await createPayment({
 ## Status lifecycle
 
 ```
-draft → compliant → verified → deprecated → archived
+draft → ready → verified → deprecated → archived
 ```
 
-### compliant — criteria
+### ready — criteria
 
 - [ ] `schema.json` passes `npm run validate`
 - [ ] `canonical_example.ts` compiles with `tsc --noEmit`
 - [ ] `gotchas[]` has at least 1 specific, actionable entry
-- [ ] `status` field set to `compliant`
+- [ ] `example_prompt` is non-empty
+- [ ] `provider.json` exists in the parent provider directory
+- [ ] `status` field set to `ready`
 
-A `compliant` spec is visible in the MCP server.
+A `ready` spec is visible in the MCP server.
 
 ### verified — criteria
 
-- [ ] All compliant criteria met
+- [ ] All `ready` criteria met
 - [ ] Working example exists in `afrotools/examples`
 - [ ] Maintainer has set status to `verified`
 
@@ -226,11 +260,11 @@ Gotchas must be: specific, actionable, based on real integration experience.
 
 ## Provider index
 
-| Provider | Category | Slug | Country | Capabilities | Status |
+| Provider | Category | Slug | Countries | Capabilities | Status |
 |---|---|---|---|---|---|
-| Paycard | payment | paycard | GN | create_payment, verify_payment, webhook | In progress |
-| Wave | payment | wave | SN, CI, ML | create_payment, verify_payment, webhook | Planned |
-| LengoPay | payment | lengopay | — | create_payment, verify_payment | Planned |
-| Djomy | payment | djomy | — | create_payment, verify_payment | Planned |
-| Bictorys | payment | bictorys | — | create_payment, verify_payment, webhook | Planned |
-| NimbaSMS | sms | nimbasms | SN | send_otp, send_bulk | Planned |
+| Paycard | payment | paycard | GN | create_payment, verify_payment, webhook_payment_completed | verified (3/3) |
+| Djomy | payment | djomy | GN | confirm_otp, create_payment, create_payment_gateway, create_payment_link, get_payment_link, verify_payment, webhook_payment_completed | ready (4/7 verified) |
+| LengoPay | payment | lengopay | GN | cashin_request, cashin_status, create_payment, get_balance, list_cashin_transactions, list_transactions, verify_payment, webhook_payment_completed | ready (2/8 verified) |
+| Wave | payment | wave | SN, CI, ML, GN, UG, BF, GM, NE, CM, SL, CD | create_checkout_session, create_payout_batch, expire_checkout, get_balance, get_payout, get_transactions, refund_checkout, search_checkouts, send_payout, verify_payment, verify_recipient, webhook_payment_completed | ready (12/12) |
+| NimbaSMS | sms | nimbasms | GN | create_contact, get_balance, get_message, list_contacts, list_groups, list_messages, list_sendernames, send_message, send_verification, verify_code, webhook_sms_status | ready (11/11) |
+| Bictorys | payment | bictorys | — | — | planned |

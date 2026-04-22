@@ -1,17 +1,18 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "wave",
-  "provider_name": "Wave",
   "provider_api_version": "2024-03-29",
-  "category": "payment",
   "capability": "webhook_payment_completed",
   "capability_type": "webhook",
-  "status": "compliant",
-  "country_code": ["SN", "CI", "ML", "GN", "UG", "BF", "GM", "NE", "CM", "SL", "CD"],
-  "currency": ["XOF", "GNF", "UGX", "GMD", "XAF", "SLE", "CDF"],
-  "sandbox": false,
-  "docs_url": "https://docs.wave.com/webhook",
-  "docs_public": true,
+  "status": "ready",
+  "currency": [
+    "XOF",
+    "GNF",
+    "UGX",
+    "GMD",
+    "XAF",
+    "SLE",
+    "CDF"
+  ],
   "auth": {
     "type": "none"
   },
@@ -19,6 +20,7 @@
     "method": "POST",
     "url": "{your_webhook_url}"
   },
+  "example_prompt": "Add a Wave webhook handler to automatically confirm orders when payment completes.",
   "input_schema": {
     "type": "object",
     "description": "Payload que Wave POSTe à votre endpoint lors d'un événement checkout.session.completed.",
@@ -29,7 +31,9 @@
       },
       "type": {
         "type": "string",
-        "enum": ["checkout.session.completed"],
+        "enum": [
+          "checkout.session.completed"
+        ],
         "description": "Type de l'événement."
       },
       "data": {
@@ -42,12 +46,16 @@
           },
           "checkout_status": {
             "type": "string",
-            "enum": ["complete"],
+            "enum": [
+              "complete"
+            ],
             "description": "Toujours 'complete' pour cet événement."
           },
           "payment_status": {
             "type": "string",
-            "enum": ["succeeded"],
+            "enum": [
+              "succeeded"
+            ],
             "description": "Toujours 'succeeded' pour cet événement."
           },
           "amount": {

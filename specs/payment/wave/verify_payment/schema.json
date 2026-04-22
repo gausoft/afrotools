@@ -1,25 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "wave",
-  "provider_name": "Wave",
   "provider_api_version": "2024-03-29",
-  "category": "payment",
   "capability": "verify_payment",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "SN",
-    "CI",
-    "ML",
-    "GN",
-    "UG",
-    "BF",
-    "GM",
-    "NE",
-    "CM",
-    "SL",
-    "CD"
-  ],
+  "status": "ready",
   "currency": [
     "XOF",
     "GNF",
@@ -29,9 +13,6 @@
     "SLE",
     "CDF"
   ],
-  "sandbox": false,
-  "docs_url": "https://docs.wave.com/checkout",
-  "docs_public": true,
   "auth": {
     "type": "api_key",
     "location": "header",
@@ -43,6 +24,7 @@
     "method": "GET",
     "url": "https://api.wave.com/v1/checkout/sessions/{id}"
   },
+  "example_prompt": "Add server-side Wave payment verification to my order fulfillment flow.",
   "input_schema": {
     "type": "object",
     "required": [

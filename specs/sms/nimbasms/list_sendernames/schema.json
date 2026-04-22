@@ -1,17 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "list_sendernames",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
-  "sandbox": false,
-  "docs_url": "https://developers.nimbasms.com/",
-  "docs_public": true,
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "auth": {
     "type": "basic",
     "location": "header",
@@ -23,6 +18,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/sendernames"
   },
+  "example_prompt": "Get the sender names I'm allowed to use on NimbaSMS.",
   "input_schema": {
     "type": "object",
     "properties": {
@@ -46,11 +42,17 @@
         "description": "Nombre total de sender names."
       },
       "next": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page suivante ou null."
       },
       "previous": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page précédente ou null."
       },
       "results": {
@@ -58,14 +60,28 @@
         "items": {
           "type": "object",
           "properties": {
-            "sendername_id": { "type": "string", "format": "uuid", "description": "Identifiant unique du sender name." },
-            "name": { "type": "string", "description": "Nom d'expéditeur." },
+            "sendername_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifiant unique du sender name."
+            },
+            "name": {
+              "type": "string",
+              "description": "Nom d'expéditeur."
+            },
             "status": {
               "type": "string",
-              "enum": ["pending", "refused", "accepted"],
+              "enum": [
+                "pending",
+                "refused",
+                "accepted"
+              ],
               "description": "Statut du sender name. Seul 'accepted' peut être utilisé dans send_message et send_verification."
             },
-            "added_at": { "type": "integer", "description": "Date d'ajout en Unix timestamp (secondes)." }
+            "added_at": {
+              "type": "integer",
+              "description": "Date d'ajout en Unix timestamp (secondes)."
+            }
           }
         }
       }

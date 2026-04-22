@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "webhook_payment_completed",
   "capability_type": "webhook",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
-  "sandbox": true,
-  "docs_url": "https://developers.djomy.africa/",
-  "docs_public": true,
   "auth": {
     "type": "none"
   },
@@ -23,6 +14,7 @@
     "method": "POST",
     "url": "{your_webhook_url}"
   },
+  "example_prompt": "Add a Djomy webhook handler to automatically confirm orders when payment completes.",
   "input_schema": {
     "type": "object",
     "description": "Payload Djomy POSTs to your webhook URL when a payment event occurs.",

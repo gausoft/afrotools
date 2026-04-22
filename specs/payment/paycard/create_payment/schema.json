@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "paycard",
-  "provider_name": "Paycard",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "create_payment",
   "capability_type": "synchronous",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
-  "sandbox": false,
-  "docs_url": "",
-  "docs_public": false,
   "auth": {
     "type": "api_key",
     "location": "body",
@@ -27,6 +18,7 @@
     "method": "POST",
     "url": "https://mapaycard.com/epay/create/"
   },
+  "example_prompt": "Add Paycard mobile money payment to my checkout.",
   "input_schema": {
     "type": "object",
     "required": [

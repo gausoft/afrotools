@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "get_payment_link",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
-  "sandbox": true,
-  "docs_url": "https://developers.djomy.africa/",
-  "docs_public": true,
   "auth": {
     "type": "bearer",
     "location": "header",
@@ -27,6 +18,7 @@
     "method": "GET",
     "url": "https://sandbox-api.djomy.africa/v1/links/{reference}"
   },
+  "example_prompt": "Add a check to see if a customer has paid via the Djomy link I sent them.",
   "input_schema": {
     "type": "object",
     "required": [

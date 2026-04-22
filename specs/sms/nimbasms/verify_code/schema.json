@@ -1,17 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "verify_code",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
-  "sandbox": false,
-  "docs_url": "https://developers.nimbasms.com/",
-  "docs_public": true,
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "auth": {
     "type": "basic",
     "location": "header",
@@ -23,9 +18,13 @@
     "method": "PATCH",
     "url": "https://api.nimbasms.com/v1/verifications/{id}"
   },
+  "example_prompt": "Verify the OTP my user entered during phone verification.",
   "input_schema": {
     "type": "object",
-    "required": ["id", "code"],
+    "required": [
+      "id",
+      "code"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -45,7 +44,16 @@
     "properties": {
       "status": {
         "type": "string",
-        "enum": ["pending", "sent", "expired", "failure", "received", "too_many_attemps", "approved", "read"],
+        "enum": [
+          "pending",
+          "sent",
+          "expired",
+          "failure",
+          "received",
+          "too_many_attemps",
+          "approved",
+          "read"
+        ],
         "description": "Statut de la vérification après tentative. 'approved' = code correct. 'too_many_attemps' = tentatives épuisées (typo dans l'API, un seul 't' à 'attempts')."
       }
     }
@@ -59,7 +67,9 @@
       },
       "code": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Erreurs de validation sur le champ 'code'."
       }
     }

@@ -1,21 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "create_payment_link",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
-  "sandbox": true,
-  "docs_url": "https://developers.djomy.africa/",
-  "docs_public": true,
   "auth": {
     "type": "bearer",
     "location": "header",
@@ -27,6 +18,7 @@
     "method": "POST",
     "url": "https://sandbox-api.djomy.africa/v1/links"
   },
+  "example_prompt": "Add Djomy payment link to my payment workflow.",
   "input_schema": {
     "type": "object",
     "required": [

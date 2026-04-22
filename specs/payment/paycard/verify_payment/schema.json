@@ -1,17 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "paycard",
-  "provider_name": "Paycard",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "verify_payment",
   "capability_type": "synchronous",
   "status": "verified",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
-  "sandbox": false,
-  "docs_url": "",
-  "docs_public": false,
+  "currency": [
+    "GNF"
+  ],
   "auth": {
     "type": "api_key",
     "location": "path",
@@ -23,9 +18,12 @@
     "method": "GET",
     "url": "https://mapaycard.com/epay/{c}/{ref}/status"
   },
+  "example_prompt": "Add server-side Paycard payment verification to my order fulfillment flow.",
   "input_schema": {
     "type": "object",
-    "required": ["ref"],
+    "required": [
+      "ref"
+    ],
     "properties": {
       "ref": {
         "type": "string",
@@ -65,27 +63,48 @@
         "description": "Payment status. Known values: 'new' (pending, do not fulfill), 'success' (paid). Check case-insensitively. Paycard does not document all possible values."
       },
       "status_description": {
-        "type": ["string", "null"]
+        "type": [
+          "string",
+          "null"
+        ]
       },
       "ecommerce_description": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Order description echoed back."
       },
       "payment_method": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Method used, e.g. ORANGE_MONEY, MOMO, CREDIT_CARD, PAYCARD. Null until payment completes."
       },
       "payment_method_reference": {
-        "type": ["string", "null"]
+        "type": [
+          "string",
+          "null"
+        ]
       },
       "payment_reference": {
-        "type": ["string", "null"]
+        "type": [
+          "string",
+          "null"
+        ]
       },
       "payment_description": {
-        "type": ["string", "null"]
+        "type": [
+          "string",
+          "null"
+        ]
       },
       "transaction_date": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "Date and time of the transaction. Null until payment completes."
       }
     }
