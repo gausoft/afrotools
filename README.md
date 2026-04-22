@@ -1,41 +1,40 @@
 # Afro.tools — AI-ready infrastructure for African APIs
 
-African APIs sont production-grade. Ce qui manquait : un format
-machine-readable standardisé que les agents IA peuvent consommer
-directement — sans parser des pages de documentation ni deviner
-les shapes de requêtes.
+African APIs are production-grade. What's been missing is a standard,
+machine-readable format that AI agents can consume directly — without
+parsing documentation pages or guessing at request shapes.
 
-Afro.tools comble ce vide : un registre statique, open source,
-de specs structurées pour les APIs africaines. Chaque spec est
-vérifiée contre l'API réelle et expose exactement ce qu'un agent
-IA a besoin pour générer du code d'intégration correct du premier coup.
+Afro.tools fills that gap: a static, open-source registry of structured
+specs for African APIs. Each spec is verified against the live API and
+exposes exactly what an AI agent needs to generate correct integration
+code on the first try.
 
 ---
 
-## Comment ça marche
+## How it works
 
 ```mermaid
 graph LR
     A["specs/ — open source"] -->|GitHub raw URLs| B["MCP server\nmcp.afro.tools"]
-    B -->|MCP protocol| C["Agent IA\nClaude · Cursor · Copilot · ..."]
-    C -->|génère| D["Code d'intégration\ndans ton app"]
+    B -->|MCP protocol| C["AI agent\nClaude · Cursor · Copilot · ..."]
+    C -->|generates| D["Integration code\nin your app"]
     A -->|plugin| C
 ```
 
 ---
 
-## Qu'est-ce qu'une spec ?
+## What is a spec?
 
-Une spec vit dans `specs/{category}/{provider}/{capability}/` et contient deux fichiers :
+A spec lives at `specs/{category}/{provider}/{capability}/` and contains exactly two files:
 
-- **`schema.json`** — description ATSS-compliant de la capability API (endpoint, auth, input/output schemas, gotchas)
-- **`canonical_example.ts`** — implémentation TypeScript avec native fetch, compile avec `tsc --noEmit`
+- **`schema.json`** — ATSS-compliant description of the API capability (endpoint, auth, input/output schemas, gotchas)
+- **`canonical_example.ts`** — TypeScript implementation using native fetch, compiles with `tsc --noEmit`
 
-Chaque provider a aussi un **`provider.json`** à la racine de son dossier :
+Each provider also has a **`provider.json`** at the root of its folder:
 
 ```
 specs/payment/paycard/
-├── provider.json                    ← metadata + description + example_prompt global
+├── provider.json                    ← metadata + description + example_prompt
 ├── create_payment/
 │   ├── schema.json
 │   └── canonical_example.ts
@@ -43,15 +42,15 @@ specs/payment/paycard/
 └── webhook_payment_completed/
 ```
 
-Voir [ATSS.md](./ATSS.md) pour la spécification complète.
+See [ATSS.md](./ATSS.md) for the full specification.
 
 ---
 
 ## Providers
 
 <!-- tableau généré automatiquement par le pipeline — ne pas éditer manuellement -->
-| Provider | Catégorie | Pays | Capabilities | Statut |
-|----------|-----------|------|-------------|--------|
+| Provider | Category | Country | Capabilities | Status |
+|----------|----------|---------|--------------|--------|
 | Paycard | payment | 🇬🇳 | 3 | ✅ AI Ready |
 | Djomy | payment | 🇬🇳 | 7 | 4 verified · 3 ready |
 | LengoPay | payment | 🇬🇳 | 8 | 2 verified · 6 ready |
@@ -59,11 +58,11 @@ Voir [ATSS.md](./ATSS.md) pour la spécification complète.
 | Wave | payment | 🇸🇳 🇨🇮 🇲🇱 +8 | 12 | 📋 Ready |
 <!-- fin du tableau -->
 
-**Légende :** ✅ AI Ready = toutes les capabilities `verified` · X verified · Y ready = en attente de validation en prod · 📋 Ready = spec validée · 🗓 Planifié = specs à venir
+**Legend:** ✅ AI Ready = all capabilities `verified` · X verified · Y ready = awaiting production validation · 📋 Ready = spec validated · 🗓 Planned = specs coming soon
 
 ---
 
-## Utiliser avec un client MCP
+## Use with an MCP client
 
 ### Claude Code
 
@@ -86,35 +85,35 @@ claude mcp add --transport http afrotools https://mcp.afro.tools/mcp
 
 ---
 
-## Plugin Claude Code
+## Claude Code plugin
 
 ```
 /plugin marketplace add afrotools/afrotools
 /plugin install afrotools
 ```
 
-**Skills auto-activés** selon le contexte :
-- `payment` — intégration d'une API de paiement
-- `sms` — intégration d'une API SMS
-- `debug` — quand une intégration basée sur une spec afrotools échoue → diagnostique si le problème vient de la spec, d'un gotcha manquant ou d'un changement d'API non documenté
+**Auto-activated skills** based on context:
+- `payment` — integrating a payment API
+- `sms` — integrating an SMS API
+- `debug` — when an integration based on an afrotools spec fails → diagnoses whether the problem is a spec error, a missing gotcha, or an undocumented API change
 
-**Commandes manuelles :**
-- `/afrotools:spec <provider> <capability>` — inspecter une spec complète
-- `/afrotools:list` — lister toutes les specs disponibles
-- `/afrotools:new <category> <provider> <capability>` — scaffolder une nouvelle spec
-
----
-
-## Contribuer
-
-Voir [CONTRIBUTING.md](./CONTRIBUTING.md) pour ajouter une spec ou améliorer une existante.
-
-Lifecycle des specs : `draft → ready → verified`
-
-Un provider affiche le badge **AI Ready** quand toutes ses capabilities sont `verified`.
+**Manual commands:**
+- `/afrotools:spec <provider> <capability>` — inspect a full spec
+- `/afrotools:list` — list all available specs
+- `/afrotools:new <category> <provider> <capability>` — scaffold a new spec
 
 ---
 
-## Licence
+## Contributing
 
-Apache 2.0 — voir [LICENSE](./LICENSE).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) to add a spec or improve an existing one.
+
+Spec lifecycle: `draft → ready → verified`
+
+A provider earns the **AI Ready** badge when all its capabilities reach `verified`.
+
+---
+
+## License
+
+Apache 2.0 — see [LICENSE](./LICENSE).

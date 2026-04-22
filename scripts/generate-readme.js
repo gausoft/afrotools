@@ -188,8 +188,8 @@ function sortProviders(providers) {
  * @returns {string}
  */
 function buildTable(providers) {
-  const header = "| Provider | Catégorie | Pays | Capabilities | Statut |"
-  const sep = "|----------|-----------|------|-------------|--------|"
+  const header = "| Provider | Category | Country | Capabilities | Status |"
+  const sep = "|----------|----------|---------|--------------|--------|"
 
   const rows = providers.map((p) => {
     const flags = buildFlags(p.country_code)
