@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "create_contact",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -23,9 +21,12 @@
     "method": "POST",
     "url": "https://api.nimbasms.com/v1/contacts"
   },
+  "example_prompt": "Create a new contact in the NimbaSMS address book for use in future messaging campaigns.",
   "input_schema": {
     "type": "object",
-    "required": ["numero"],
+    "required": [
+      "numero"
+    ],
     "properties": {
       "numero": {
         "type": "string",
@@ -37,7 +38,9 @@
       },
       "groups": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Noms des groupes auxquels ajouter le contact (optionnel). Les groupes doivent exister dans votre compte."
       }
     }
@@ -55,7 +58,9 @@
       },
       "groups": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Groupes auxquels le contact a été ajouté."
       }
     }
@@ -69,12 +74,16 @@
       },
       "numero": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Erreurs de validation sur le champ 'numero' (format invalide, doublon)."
       },
       "groups": {
         "type": "array",
-        "items": { "type": "string" },
+        "items": {
+          "type": "string"
+        },
         "description": "Erreurs de validation sur le champ 'groups' (groupe inexistant)."
       }
     }

@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "lengopay",
-  "provider_name": "LengoPay",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "list_transactions",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "POST",
     "url": "https://portal.lengopay.com/api/v1/transactions"
   },
+  "example_prompt": "Retrieve a paginated list of all LengoPay transactions for the account.",
   "input_schema": {
     "type": "object",
     "required": [

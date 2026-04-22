@@ -1,0 +1,8 @@
+{
+  "slug": "nimbasms",
+  "name": "NimbaSMS",
+  "category": "sms",
+  "country_code": ["GN"],
+  "description": "NimbaSMS is a Guinean professional messaging platform supporting SMS, WhatsApp, and email delivery from a single API with contact and group management.",
+  "example_prompt": "Use NimbaSMS to send an OTP verification code to a Guinean phone number, then verify the code entered by the user to complete authentication."
+}

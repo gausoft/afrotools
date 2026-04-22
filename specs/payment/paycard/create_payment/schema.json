@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "paycard",
-  "provider_name": "Paycard",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "create_payment",
   "capability_type": "synchronous",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "POST",
     "url": "https://mapaycard.com/epay/create/"
   },
+  "example_prompt": "Initiate a Paycard mobile money payment for a given amount in GNF, extract the operation_reference from the response, and store it immediately before redirecting the user.",
   "input_schema": {
     "type": "object",
     "required": [

@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "list_groups",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -23,6 +21,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/groups"
   },
+  "example_prompt": "List all contact groups defined in the NimbaSMS account.",
   "input_schema": {
     "type": "object",
     "properties": {
@@ -46,11 +45,17 @@
         "description": "Nombre total de groupes."
       },
       "next": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page suivante ou null."
       },
       "previous": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page précédente ou null."
       },
       "results": {
@@ -58,10 +63,24 @@
         "items": {
           "type": "object",
           "properties": {
-            "groupe_id": { "type": "string", "format": "uuid", "description": "Identifiant unique du groupe." },
-            "name": { "type": "string", "maxLength": 100, "description": "Nom du groupe." },
-            "added_at": { "type": "string", "description": "Date d'ajout du groupe." },
-            "total_contact": { "type": "integer", "description": "Nombre de contacts dans le groupe." }
+            "groupe_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Identifiant unique du groupe."
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Nom du groupe."
+            },
+            "added_at": {
+              "type": "string",
+              "description": "Date d'ajout du groupe."
+            },
+            "total_contact": {
+              "type": "integer",
+              "description": "Nombre de contacts dans le groupe."
+            }
           }
         }
       }

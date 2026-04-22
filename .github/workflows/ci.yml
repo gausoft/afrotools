@@ -39,6 +39,13 @@ jobs:
       - name: Validate all specs (push to main)
         if: github.event_name == 'push'
         run: npm run validate
+      - name: Trigger MCP redeploy
+        if: github.event_name == 'push' && success()
+        run: |
+          gh api repos/afrotools/mcp/dispatches \
+            --method POST --field event_type=specs-updated
+        env:
+          GH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
 
   # Security scan + CodeQL — only when specs/** changed
   security:

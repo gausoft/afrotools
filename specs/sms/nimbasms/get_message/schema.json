@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "get_message",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -23,9 +21,12 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/messages/{id}"
   },
+  "example_prompt": "Retrieve the delivery status of a specific NimbaSMS message using its message ID.",
   "input_schema": {
     "type": "object",
-    "required": ["id"],
+    "required": [
+      "id"
+    ],
     "properties": {
       "id": {
         "type": "string",
@@ -52,7 +53,11 @@
       },
       "status": {
         "type": "string",
-        "enum": ["pending", "sent", "failure"],
+        "enum": [
+          "pending",
+          "sent",
+          "failure"
+        ],
         "description": "Statut global du message."
       },
       "sent_at": {
@@ -69,11 +74,23 @@
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "string", "format": "uuid" },
-            "contact": { "type": "string", "description": "Numéro destinataire." },
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "contact": {
+              "type": "string",
+              "description": "Numéro destinataire."
+            },
             "status": {
               "type": "string",
-              "enum": ["tosend", "sent", "received", "failure", "not_available"],
+              "enum": [
+                "tosend",
+                "sent",
+                "received",
+                "failure",
+                "not_available"
+              ],
               "description": "Statut de livraison pour ce destinataire."
             }
           }

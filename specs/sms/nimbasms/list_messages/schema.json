@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "list_messages",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -23,6 +21,7 @@
     "method": "GET",
     "url": "https://api.nimbasms.com/v1/messages"
   },
+  "example_prompt": "List messages sent via NimbaSMS, optionally filtered by date range or status.",
   "input_schema": {
     "type": "object",
     "properties": {
@@ -61,11 +60,17 @@
         "description": "Nombre total de messages disponibles."
       },
       "next": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page suivante ou null si dernière page."
       },
       "previous": {
-        "type": ["string", "null"],
+        "type": [
+          "string",
+          "null"
+        ],
         "description": "URL de la page précédente ou null si première page."
       },
       "results": {
@@ -73,12 +78,29 @@
         "items": {
           "type": "object",
           "properties": {
-            "id": { "type": "string", "format": "uuid" },
-            "status": { "type": "string" },
-            "to": { "type": "array", "items": { "type": "string" } },
-            "message": { "type": "string" },
-            "sender_name": { "type": "string" },
-            "sent_at": { "type": "string", "format": "date-time" },
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string"
+            },
+            "to": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "message": {
+              "type": "string"
+            },
+            "sender_name": {
+              "type": "string"
+            },
+            "sent_at": {
+              "type": "string",
+              "format": "date-time"
+            },
             "message_cost": {
               "type": "integer",
               "readOnly": true,

@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "confirm_otp",
   "capability_type": "synchronous",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "POST",
     "url": "https://sandbox-api.djomy.africa/v1/payments/{transactionReference}/confirmOTP"
   },
+  "example_prompt": "Confirm a Djomy payment OTP submitted by the user to authorize the pending mobile money transaction.",
   "input_schema": {
     "type": "object",
     "required": [

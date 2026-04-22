@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "create_payment",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "POST",
     "url": "https://sandbox-api.djomy.africa/v1/payments"
   },
+  "example_prompt": "Create a Djomy mobile money payment request for a given amount and redirect the user to complete the payment flow.",
   "input_schema": {
     "type": "object",
     "required": [

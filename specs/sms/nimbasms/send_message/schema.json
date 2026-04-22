@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "send_message",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -23,13 +21,21 @@
     "method": "POST",
     "url": "https://api.nimbasms.com/v1/messages"
   },
+  "example_prompt": "Send an SMS to one or more Guinean phone numbers via NimbaSMS, specifying the sender name and message content.",
   "input_schema": {
     "type": "object",
-    "required": ["to", "message", "sender_name"],
+    "required": [
+      "to",
+      "message",
+      "sender_name"
+    ],
     "properties": {
       "to": {
         "type": "array",
-        "items": { "type": "string", "maxLength": 15 },
+        "items": {
+          "type": "string",
+          "maxLength": 15
+        },
         "minItems": 1,
         "maxItems": 30,
         "description": "Numéros destinataires. Trois formats acceptés : local (623XXXXXX), avec indicatif (224623XXXXXX), ou E.164 (+224623XXXXXX). Maximum 30 contacts par requête."
@@ -46,7 +52,11 @@
       },
       "channel": {
         "type": "string",
-        "enum": ["sms", "whatsapp", "email"],
+        "enum": [
+          "sms",
+          "whatsapp",
+          "email"
+        ],
         "default": "sms",
         "description": "Canal d'envoi. Défaut: 'sms'."
       }
@@ -54,7 +64,11 @@
   },
   "response_schema": {
     "type": "object",
-    "required": ["messageid", "message_cost", "url"],
+    "required": [
+      "messageid",
+      "message_cost",
+      "url"
+    ],
     "properties": {
       "messageid": {
         "type": "string",

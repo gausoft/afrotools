@@ -1,25 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "wave",
-  "provider_name": "Wave",
   "provider_api_version": "2024-03-29",
-  "category": "payment",
   "capability": "search_checkouts",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "SN",
-    "CI",
-    "ML",
-    "GN",
-    "UG",
-    "BF",
-    "GM",
-    "NE",
-    "CM",
-    "SL",
-    "CD"
-  ],
+  "status": "ready",
   "currency": [
     "XOF",
     "GNF",
@@ -43,6 +27,7 @@
     "method": "GET",
     "url": "https://api.wave.com/v1/checkout/sessions/search"
   },
+  "example_prompt": "Search Wave checkout sessions by date range or status to reconcile payments.",
   "input_schema": {
     "type": "object",
     "required": [

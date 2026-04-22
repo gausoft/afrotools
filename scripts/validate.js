@@ -28,20 +28,17 @@ const SPECS_ROOT = path.resolve(__dirname, "../specs");
 
 const REQUIRED_FIELDS = [
   "spec_version",
-  "provider_slug",
-  "provider_name",
   "provider_api_version",
-  "category",
   "capability",
   "capability_type",
   "status",
-  "country_code",
   "currency",
   "sandbox",
   "docs_url",
   "docs_public",
   "auth",
   "endpoint",
+  "example_prompt",
   "input_schema",
   "response_schema",
   "error_schema",
@@ -49,7 +46,7 @@ const REQUIRED_FIELDS = [
 ];
 
 const VALID_CAPABILITY_TYPES = ["synchronous", "asynchronous", "webhook"];
-const VALID_STATUSES = ["draft", "compliant", "verified", "deprecated", "archived"];
+const VALID_STATUSES = ["draft", "ready", "verified", "deprecated", "archived"];
 
 // ---------------------------------------------------------------------------
 // Cross-spec constants
@@ -186,10 +183,43 @@ function validateSchema(specPath) {
     return fail(specPath, `schema.json parse error: ${err.message}`);
   }
 
+  // Validate provider.json exists for this spec
+  const providerDir = path.dirname(specPath);  // specs/category/provider
+  const providerJsonPath = path.join(providerDir, "provider.json");
+  let providerManifest;
+  try {
+    const raw = fs.readFileSync(providerJsonPath, "utf-8");
+    providerManifest = JSON.parse(raw);
+  } catch {
+    return fail(specPath, `Missing provider.json at ${providerJsonPath} — create it with slug, name, category, country_code, description, example_prompt`);
+  }
+
+  // Validate provider.json required fields
+  const PROVIDER_REQUIRED_FIELDS = ["slug", "name", "category", "country_code", "description", "example_prompt"];
+  for (const field of PROVIDER_REQUIRED_FIELDS) {
+    if (!(field in providerManifest)) {
+      return fail(specPath, `provider.json at ${providerJsonPath} missing required field: "${field}"`);
+    }
+  }
+  if (!providerManifest.example_prompt?.trim()) {
+    return fail(specPath, `provider.json example_prompt must be non-empty`);
+  }
+  if (!Array.isArray(providerManifest.country_code) || providerManifest.country_code.length === 0) {
+    return fail(specPath, `provider.json country_code must be a non-empty array`);
+  }
+
   // Required fields present
   for (const field of REQUIRED_FIELDS) {
     if (!(field in schema)) {
       return fail(specPath, `schema.json missing required field: "${field}"`);
+    }
+  }
+
+  // Migrated fields must not appear in schema.json — they belong in provider.json
+  const MIGRATED_FIELDS = ["provider_slug", "provider_name", "category", "country_code"];
+  for (const field of MIGRATED_FIELDS) {
+    if (field in schema) {
+      return fail(specPath, `schema.json must not contain "${field}" — this field has been migrated to provider.json`);
     }
   }
 
@@ -211,9 +241,9 @@ function validateSchema(specPath) {
     return fail(specPath, `status must be one of ${VALID_STATUSES.join("|")}, got "${schema.status}"`);
   }
 
-  // country_code array
-  if (!Array.isArray(schema.country_code)) {
-    return fail(specPath, `country_code must be an array`);
+  // example_prompt must be non-empty for ready/verified specs
+  if ((schema.status === "ready" || schema.status === "verified") && !schema.example_prompt?.trim()) {
+    return fail(specPath, `example_prompt is required and must be non-empty for status "${schema.status}"`);
   }
 
   // currency array
@@ -577,7 +607,8 @@ function runCrossSpecChecks(loadedSchemas) {
   for (const [slug, entries] of loadedSchemas) {
     if (entries.length < 2) continue;
 
-    const ccSigs    = entries.map(({ schema: s }) => JSON.stringify([...s.country_code].sort()));
+    // country_code comes from provider.json (same for all specs of a provider, but check anyway)
+    const ccSigs    = entries.map(({ providerManifest: p }) => JSON.stringify([...p.country_code].sort()));
     const curSigs   = entries.map(({ schema: s }) => JSON.stringify([...s.currency].sort()));
     const apiVers   = entries.map(({ schema: s }) => s.provider_api_version);
     const sandboxes = entries.map(({ schema: s }) => String(s.sandbox));
@@ -587,15 +618,15 @@ function runCrossSpecChecks(loadedSchemas) {
     const majApiVer  = mostCommon(apiVers);
     const majSandbox = mostCommon(sandboxes);
 
-    for (const { specPath, schema } of entries) {
+    for (const { specPath, schema, providerManifest } of entries) {
       const rel = path.relative(SPECS_ROOT, specPath);
       /** @type {string[]} */ const errors = [];
-      const ccSig = JSON.stringify([...schema.country_code].sort());
+      const ccSig = JSON.stringify([...providerManifest.country_code].sort());
       const curSig = JSON.stringify([...schema.currency].sort());
 
       if (ccSig !== majCC) {
         errors.push(
-          `[CROSS-SPEC] country_code: [${[...schema.country_code].sort().join(", ")}] ` +
+          `[CROSS-SPEC] country_code (provider.json): [${[...providerManifest.country_code].sort().join(", ")}] ` +
           `(majoritaire: ${majCC})`
         );
       }
@@ -627,9 +658,11 @@ function runCrossSpecChecks(loadedSchemas) {
   }
 
   // Priority 2: country/currency coherence per spec
+  // country_code is now read from provider.json; pass it alongside schema
   for (const [, entries] of loadedSchemas) {
-    for (const { specPath, schema } of entries) {
-      if (!checkCountryCurrencyCoherence(specPath, schema)) failures++;
+    for (const { specPath, schema, providerManifest } of entries) {
+      // Build a merged view for checkCountryCurrencyCoherence which expects country_code on the object
+      if (!checkCountryCurrencyCoherence(specPath, { ...schema, country_code: providerManifest.country_code })) failures++;
     }
   }
 
@@ -676,9 +709,13 @@ for (const specPath of specs) {
     if (!isChangedMode) {
       try {
         const schema = JSON.parse(fs.readFileSync(path.join(specPath, "schema.json"), "utf8"));
-        const slug = schema.provider_slug;
+        // Derive provider_slug from path: specs/{category}/{provider}/{capability}
+        const slug = path.basename(path.dirname(specPath));
+        // Load provider.json for cross-spec data (already validated above)
+        const providerDir = path.dirname(specPath);
+        const providerManifest = JSON.parse(fs.readFileSync(path.join(providerDir, "provider.json"), "utf-8"));
         if (!loadedSchemas.has(slug)) loadedSchemas.set(slug, []);
-        loadedSchemas.get(slug).push({ specPath, schema });
+        loadedSchemas.get(slug).push({ specPath, schema, providerManifest });
       } catch { /* parse errors already caught by validateSchema */ }
     }
   }

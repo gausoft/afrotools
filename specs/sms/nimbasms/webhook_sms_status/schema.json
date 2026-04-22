@@ -1,14 +1,12 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "nimbasms",
-  "provider_name": "NimbaSMS",
   "provider_api_version": "2024-01-01",
-  "category": "sms",
   "capability": "webhook_sms_status",
   "capability_type": "webhook",
-  "status": "compliant",
-  "country_code": ["GN"],
-  "currency": ["GNF"],
+  "status": "ready",
+  "currency": [
+    "GNF"
+  ],
   "sandbox": false,
   "docs_url": "https://developers.nimbasms.com/",
   "docs_public": true,
@@ -20,9 +18,14 @@
     "method": "POST",
     "url": "https://your-app.com/webhooks/sms-status"
   },
+  "example_prompt": "Handle an incoming NimbaSMS webhook to receive delivery status updates for previously sent messages.",
   "input_schema": {
     "type": "object",
-    "required": ["messageid", "contact", "metadata"],
+    "required": [
+      "messageid",
+      "contact",
+      "metadata"
+    ],
     "properties": {
       "messageid": {
         "type": "string",
@@ -31,7 +34,10 @@
       },
       "status": {
         "type": "string",
-        "enum": ["received", "failed"],
+        "enum": [
+          "received",
+          "failed"
+        ],
         "default": "received",
         "description": "Nouveau statut du message. 'received' = livré au destinataire, 'failed' = échec de livraison."
       },
@@ -42,11 +48,15 @@
       },
       "metadata": {
         "type": "object",
-        "required": ["message_type"],
+        "required": [
+          "message_type"
+        ],
         "properties": {
           "message_type": {
             "type": "string",
-            "enum": ["API"],
+            "enum": [
+              "API"
+            ],
             "description": "Type de message. Toujours 'API' pour les envois via l'API."
           }
         }

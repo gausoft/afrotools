@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "lengopay",
-  "provider_name": "LengoPay",
   "provider_api_version": "2024-01-01",
-  "category": "payment",
   "capability": "create_payment",
   "capability_type": "synchronous",
   "status": "verified",
-  "country_code": [
-    "GN"
-  ],
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "POST",
     "url": "https://portal.lengopay.com/api/v1/payments"
   },
+  "example_prompt": "Create a LengoPay payment request for a given amount and retrieve the payment reference for tracking.",
   "input_schema": {
     "type": "object",
     "required": [

@@ -1,15 +1,9 @@
 {
   "spec_version": "1.0",
-  "provider_slug": "djomy",
-  "provider_name": "Djomy",
   "provider_api_version": "v1.0",
-  "category": "payment",
   "capability": "get_payment_link",
   "capability_type": "synchronous",
-  "status": "compliant",
-  "country_code": [
-    "GN"
-  ],
+  "status": "ready",
   "currency": [
     "GNF"
   ],
@@ -27,6 +21,7 @@
     "method": "GET",
     "url": "https://sandbox-api.djomy.africa/v1/links/{reference}"
   },
+  "example_prompt": "Retrieve the current status and details of a Djomy payment link by its ID to check if it has been paid.",
   "input_schema": {
     "type": "object",
     "required": [
