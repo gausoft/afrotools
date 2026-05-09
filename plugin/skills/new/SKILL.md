@@ -1,10 +1,11 @@
 ---
 name: new
 description: >
-  Scaffold a complete set of ATSS specs (provider.json + schema.json + canonical_example.ts)
-  from an API documentation URL or local file. Reads the docs, discovers ALL capabilities
-  automatically, and implements every one with three mandatory verification checkpoints.
-  Manual invocation only.
+  Use when adding a new API provider to the Afro.tools registry. Point it at the provider's
+  documentation URL (or a local file) and it will: discover all API endpoints, create
+  provider.json, generate schema.json + canonical_example.ts for every capability, run
+  validation, and optionally verify response schemas against the live API.
+  Invoke with: /afrotools:new <docs_url> [category] [provider_slug]. Manual invocation only.
 disable-model-invocation: true
 ---
 
@@ -287,130 +288,12 @@ Bad:
 
 **Step 7. Create `specs/{category}/{provider_slug}/{capability}/canonical_example.ts`.**
 
-**For synchronous capabilities** (the common case):
+Read `references/canonical_example_templates.md` for the full template for each capability type.
+Pick the right one based on `capability_type`:
 
-```typescript
-/**
- * @provider ProviderName
- * @capability capability_name
- * @atss 1.0
- * @capability_type synchronous
- */
-
-const PROVIDER_API_KEY = process.env.PROVIDER_API_KEY;
-if (!PROVIDER_API_KEY) throw new Error("Missing env: PROVIDER_API_KEY");
-
-interface CapabilityInput {
-  requiredField: string;
-  optionalField?: number;
-}
-
-interface CapabilityResponse {
-  id: string;
-  status: "pending" | "succeeded" | "failed";
-}
-
-interface ProviderError {
-  code: string;
-  message: string;
-}
-
-export async function capabilityName(
-  input: CapabilityInput
-): Promise<CapabilityResponse> {
-  const response = await fetch("https://api.example.com/v1/endpoint", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${PROVIDER_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const error: ProviderError = await response.json();
-    throw new Error(`ProviderName error ${response.status}: ${error.message}`);
-  }
-
-  return response.json() as Promise<CapabilityResponse>;
-}
-
-/*
-Usage example:
-
-const result = await capabilityName({
-  requiredField: "value",
-});
-
-// Describe what the caller should do with the result.
-// Surface any gotchas relevant to usage here.
-*/
-```
-
-**For asynchronous capabilities** (provider queues work; poll for result):
-
-```typescript
-/**
- * @provider ProviderName
- * @capability submit_job
- * @atss 1.0
- * @capability_type asynchronous
- */
-
-const PROVIDER_API_KEY = process.env.PROVIDER_API_KEY;
-if (!PROVIDER_API_KEY) throw new Error("Missing env: PROVIDER_API_KEY");
-
-interface SubmitJobInput { payload: string; }
-interface JobStatus { id: string; status: "pending" | "processing" | "done" | "failed"; result?: string; }
-
-export async function submitJob(input: SubmitJobInput): Promise<JobStatus> {
-  const res = await fetch("https://api.example.com/v1/jobs", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${PROVIDER_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) throw new Error(`ProviderName error ${res.status}`);
-  return res.json() as Promise<JobStatus>;
-}
-
-export async function pollJobStatus(jobId: string): Promise<JobStatus> {
-  const res = await fetch(`https://api.example.com/v1/jobs/${jobId}`, {
-    headers: { Authorization: `Bearer ${PROVIDER_API_KEY}` },
-  });
-  if (!res.ok) throw new Error(`ProviderName error ${res.status}`);
-  return res.json() as Promise<JobStatus>;
-}
-
-/*
-Usage example:
-
-const job = await submitJob({ payload: "..." });
-
-// Poll until done (implement exponential backoff in production)
-let status = job;
-while (status.status === "pending" || status.status === "processing") {
-  await new Promise((r) => setTimeout(r, 2000));
-  status = await pollJobStatus(job.id);
-}
-
-if (status.status === "failed") throw new Error("Job failed");
-console.log(status.result);
-*/
-```
-
-Note: when a provider uses a `notif_url` / callback URL instead of polling, that is a webhook
-pattern — use `capability_type: "webhook"` and a separate `webhook_*` spec instead.
-
-**For error responses that use HTTP 200 with an error code in the body** (e.g. Paycard `code !== 0`):
-
-```typescript
-  const data = await response.json() as SuccessResponse | ProviderError;
-  if ((data as ProviderError).code !== 0) {
-    const err = data as ProviderError;
-    throw new Error(`ProviderName error ${err.code}: ${err.message}`);
-  }
-  return data as SuccessResponse;
-```
+- **synchronous** (common case) — env var check → interfaces → exported function → usage comment
+- **asynchronous** (poll-based) — two exported functions: submit + poll, with polling loop in the usage comment
+- **HTTP-200-error** — provider always returns 200; check an error code field in the body instead of `response.ok`
 
 Mandatory rules for `canonical_example.ts`:
 1. TypeScript strict — must compile with `tsc --noEmit --strict --target ES2020 --module ESNext --moduleResolution bundler --lib ES2020,DOM`, zero errors
@@ -592,18 +475,28 @@ Next steps for the contributor:
 
 ## Rules
 
-- `status` is always `"draft"` in generated files — never `ready`, `compliant`, or `verified`
-- Native `fetch` only in `canonical_example.ts` — no axios, no node-fetch, no npm imports
-- Never add a `package.json` inside a spec folder
-- Never add `provider_slug`, `provider_name`, `category`, `country_code`, `sandbox`, `docs_url`,
-  or `docs_public` to `schema.json` — these belong in `provider.json`
-- All specs for one provider must share the same `auth.env_var` value
-- All specs for one provider must share the same `currency[]` array
-- All specs for one provider must share the same `provider_api_version` string
-- `gotchas[]` must have at least 1 specific, actionable entry per spec
-- `example_prompt` in `schema.json` must be non-empty
-- `npm run validate` must pass with 0 failures before this skill is considered complete
-- Never push to main — always work on a branch (`spec/{provider_slug}` for a new provider,
-  `spec/{provider_slug}-{short-description}` for additions to an existing one)
-- Never scaffold a subset of capabilities autonomously — if the provider has 31 endpoints, create 31 specs
-- If the capability count exceeds 8, use parallel agents by thematic group (payments, customers, webhooks…)
+- Set `status` to `"draft"` in all generated files — only a human maintainer can advance
+  status after real-world verification; generating `"compliant"` or `"verified"` would misrepresent
+  the spec's validation state.
+- Use native `fetch` only in `canonical_example.ts` — npm imports would require contributors
+  to manage dependencies, breaking the zero-dependency guarantee of this static registry.
+- Don't add a `package.json` inside a spec folder — it would make the spec folder look like
+  a project root and confuse tooling that scans for `node_modules`.
+- Don't add `provider_slug`, `provider_name`, `category`, `country_code`, `sandbox`, `docs_url`,
+  or `docs_public` to `schema.json` — these fields were migrated to `provider.json` so they are
+  not duplicated across every capability; the validator rejects them in `schema.json`.
+- Keep `auth.env_var`, `currency[]`, and `provider_api_version` identical across all specs for
+  the same provider — the validator enforces cross-spec consistency and produces `[CROSS-SPEC]`
+  errors that block CI when these diverge.
+- Each spec needs at least one specific, actionable gotcha — vague reminders like "check the docs"
+  don't help AI agents; only concrete surprises (wrong field type, hidden auth requirement, edge case)
+  prevent real integration mistakes.
+- `npm run validate` must exit with 0 failures — a broken spec misleads AI agents in production;
+  the spec is only as useful as its accuracy.
+- Work on a branch, don't push to main — this repo uses squash-merge PRs for a clean history
+  and review; direct pushes bypass that.
+- Scaffold every capability in the discovery table — missing a capability means AI agents will
+  fail silently when they try to call an endpoint that has no spec. If the table has 31 rows,
+  create 31 spec folders.
+- Dispatch parallel agents when the capability count exceeds 8 — scaffolding 30+ capabilities
+  sequentially in a single context degrades quality and risks context loss.
