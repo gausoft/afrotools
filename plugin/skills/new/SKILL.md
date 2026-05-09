@@ -492,15 +492,27 @@ Do not close the task until `npm run validate` exits with 0 failures.
 
 ---
 
-### Phase 4b — Live API verification (do if credentials are available)
+### Phase 4b — Live API verification (optional but strongly recommended)
 
-If a test API key is available in the environment (check `{PROVIDER}_PUBLIC_KEY`,
-`{PROVIDER}_API_KEY`, `{PROVIDER}_PRIVATE_KEY`, etc.):
+Ask the developer to set their sandbox key so you can verify response schemas against the
+real API:
+
+```
+To verify the response schemas I've written, please run:
+
+  export {PROVIDER}_PUBLIC_KEY=test_xxx   # or whichever key gives read access
+
+This key is used only in your local terminal to run curl calls. It never leaves your
+machine. A sandbox or test key is fine — never use a production key here.
+Skip this step if you don't have one.
+```
+
+If they provide a key:
 
 1. Test every GET endpoint with curl. Use `rtk proxy curl` to bypass RTK token filtering
    and get raw JSON output (plain `curl` may be intercepted and filtered):
    ```bash
-   rtk proxy curl -s -H "Authorization: $NOTCHPAY_PUBLIC_KEY" https://api.example.com/endpoint
+   rtk proxy curl -s -H "Authorization: $PROVIDER_PUBLIC_KEY" https://api.example.com/endpoint
    ```
 
 2. For each response, compare actual field names and types against the `response_schema`
@@ -514,9 +526,8 @@ If a test API key is available in the environment (check `{PROVIDER}_PUBLIC_KEY`
 3. Correct every discrepancy before proceeding. A wrong `response_schema` is worse than
    an empty one — it will mislead AI agents and developers building on this spec.
 
-4. If credentials are not available, add this gotcha to every spec whose response was not
-   verified:
-   `"response_schema not verified against live API — validate field names and types before shipping."`
+If they skip this step, add this gotcha to every spec whose response was not verified:
+`"response_schema not verified against live API — validate field names and types before shipping."`
 
 ---
 
