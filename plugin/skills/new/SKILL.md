@@ -133,6 +133,11 @@ Re-read the docs with the capability table in hand. Section by section, confirm:
 Do not start Phase 2 until you are confident the table is exhaustive. If something is ambiguous,
 resolve it explicitly before moving on.
 
+**Explicit rule: scaffold every capability in the table. Never autonomously pick a subset
+(e.g. "the two most common ones"). If the table has 31 rows, you create 31 spec folders.**
+If the number of capabilities is unexpectedly large, tell the user the full count and proceed —
+do not silently reduce scope.
+
 ---
 
 ### Phase 2 — Create `provider.json`
@@ -159,6 +164,13 @@ Required structure:
 }
 ```
 
+**Currency coherence:** Before setting `country_code`, read `scripts/validate.js` lines 50–65
+to get the `COUNTRY_CURRENCY_MAP`. The validator requires that for every country in
+`country_code[]`, the country's standard currency appears in each spec's `currency[]` array.
+If the provider uses a non-standard currency for a country (e.g. processing XAF for users
+in Nigeria), either exclude that country from `country_code` or add the currency to the map.
+Failing to check this upfront causes cross-spec validation failures after all specs are created.
+
 Field rules:
 - `slug` — exactly matches the directory name
 - `country_code` — non-empty array; use ISO 3166-1 alpha-2 codes
@@ -175,6 +187,11 @@ Field rules:
 
 Work through the discovery table in order. Complete all steps for capability N before
 starting capability N+1.
+
+**If the table has more than 8 capabilities, dispatch parallel agents by thematic group**
+(e.g. payments, customers, webhooks, transfers). Use the `dispatching-parallel-agents`
+skill pattern — one agent per group, each with its own slice of the table. Never scaffold
+30+ capabilities sequentially in a single context; it degrades quality and risks context loss.
 
 **Step 5. Re-read the relevant docs section.**
 
@@ -426,6 +443,14 @@ Before moving to the next capability, verify all of the following:
 5. **`capability_type` is correct** — is the result immediate (synchronous), does the caller need
    to poll (asynchronous), or is this a push event from the provider (webhook)?
 
+5b. **Multi-level auth** — some providers use different credentials for different endpoints
+   (e.g. public key for payment initiation, private key for transfers and webhooks management,
+   an extra `X-Grant` header + IP whitelist for disbursements). Do not apply one `auth.env_var`
+   uniformly to all capabilities. For each capability, check the auth section of that specific
+   endpoint in the docs. If the required credential differs, use the correct `env_var`
+   (e.g. `PROVIDER_PRIVATE_KEY`) and add a gotcha: "This endpoint requires your private key,
+   not the public key used for create_payment. Using the wrong key returns 406."
+
 6. **Webhook rules** — if `capability_type` is `webhook`: `endpoint.url` must be
    `"{your_webhook_url}"` and `auth.type` must be `"none"` (unless the provider signs the
    payload — in that case document the signing mechanism in `gotchas` and set `auth` accordingly).
@@ -464,6 +489,34 @@ Common errors and causes:
 | `[CROSS-SPEC] provider_api_version` | Version inconsistent across specs | Pick one, apply to all |
 
 Do not close the task until `npm run validate` exits with 0 failures.
+
+---
+
+### Phase 4b — Live API verification (do if credentials are available)
+
+If a test API key is available in the environment (check `{PROVIDER}_PUBLIC_KEY`,
+`{PROVIDER}_API_KEY`, `{PROVIDER}_PRIVATE_KEY`, etc.):
+
+1. Test every GET endpoint with curl. Use `rtk proxy curl` to bypass RTK token filtering
+   and get raw JSON output (plain `curl` may be intercepted and filtered):
+   ```bash
+   rtk proxy curl -s -H "Authorization: $NOTCHPAY_PUBLIC_KEY" https://api.example.com/endpoint
+   ```
+
+2. For each response, compare actual field names and types against the `response_schema`
+   in the spec. Common discrepancies found in practice:
+   - Pagination: `total` vs `totals`, `per_page` vs `selected`
+   - Absent fields: `id` present in spec but API returns no `id` (uses `reference` instead)
+   - Wrong field names: `decimal_places` vs `faction`
+   - Wrong HTTP codes: spec says 200, API returns 202
+   - Nullable fields not typed as `["string", "null"]`
+
+3. Correct every discrepancy before proceeding. A wrong `response_schema` is worse than
+   an empty one — it will mislead AI agents and developers building on this spec.
+
+4. If credentials are not available, add this gotcha to every spec whose response was not
+   verified:
+   `"response_schema not verified against live API — validate field names and types before shipping."`
 
 ---
 
@@ -541,3 +594,5 @@ Next steps for the contributor:
 - `npm run validate` must pass with 0 failures before this skill is considered complete
 - Never push to main — always work on a branch (`spec/{provider_slug}` for a new provider,
   `spec/{provider_slug}-{short-description}` for additions to an existing one)
+- Never scaffold a subset of capabilities autonomously — if the provider has 31 endpoints, create 31 specs
+- If the capability count exceeds 8, use parallel agents by thematic group (payments, customers, webhooks…)
