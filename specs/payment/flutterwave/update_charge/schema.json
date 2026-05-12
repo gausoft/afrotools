@@ -1,0 +1,287 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "update_charge",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "PUT",
+    "url": "https://f4bexperience.flutterwave.com/charges/{id}"
+  },
+  "example_prompt": "Complete a pending Flutterwave charge by submitting the OTP collected from the customer.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Charge id to update (e.g. chg_EFAHCzELJb)."
+      },
+      "authorization": {
+        "type": "object",
+        "description": "Authorization details. Discriminated union on the type field — supply exactly one of otp | pin | external_3ds | avs and the matching sub-object.",
+        "required": ["type"],
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "otp"],
+            "properties": {
+              "type": { "type": "string", "enum": ["otp"] },
+              "otp": {
+                "type": "object",
+                "required": ["code"],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^\\d{4,8}$",
+                    "description": "One-time password from the bank (4-8 digits)."
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "pin"],
+            "properties": {
+              "type": { "type": "string", "enum": ["pin"] },
+              "pin": {
+                "type": "object",
+                "required": ["nonce", "encrypted_pin"],
+                "properties": {
+                  "nonce": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9]{12}$",
+                    "description": "Single-use 12-character alphanumeric nonce paired with the encrypted PIN."
+                  },
+                  "encrypted_pin": {
+                    "type": "string",
+                    "description": "Field-level encrypted PIN value (obtained via Flutterwave's encryption flow)."
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "external_3ds"],
+            "properties": {
+              "type": { "type": "string", "enum": ["external_3ds"] },
+              "external_3ds": {
+                "type": "object",
+                "required": ["eci", "authentication_token", "transaction_id", "version", "transaction_status", "status_reason_code", "amount", "time"],
+                "properties": {
+                  "eci": { "type": "string", "description": "Electronic Commerce Indicator from the ACS." },
+                  "authentication_token": { "type": "string", "description": "Base64 value from the card issuer." },
+                  "transaction_id": { "type": "string", "description": "Unique ID from the ACS." },
+                  "version": { "type": "string", "description": "EMV 3DS protocol version (e.g. 2.1.0)." },
+                  "transaction_status": {
+                    "type": "string",
+                    "enum": ["Y", "N", "U", "A", "R"],
+                    "description": "Authentication outcome (Y = authenticated)."
+                  },
+                  "status_reason_code": { "type": "string" },
+                  "amount": { "type": "number", "minimum": 0.01 },
+                  "time": { "type": "string", "format": "date-time", "description": "Payer authentication time in UTC." }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["type", "avs"],
+            "properties": {
+              "type": { "type": "string", "enum": ["avs"] },
+              "avs": {
+                "type": "object",
+                "required": ["address"],
+                "properties": {
+                  "address": {
+                    "type": "object",
+                    "required": ["line1", "city", "state", "country", "postal_code"],
+                    "properties": {
+                      "line1": { "type": "string" },
+                      "line2": { "type": "string" },
+                      "city": { "type": "string" },
+                      "state": { "type": "string" },
+                      "country": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$",
+                        "description": "ISO 3166-1 alpha-2 country code (e.g. \"US\")."
+                      },
+                      "postal_code": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "meta": {
+        "type": "object",
+        "description": "Free-form metadata to attach to the charge. Values must be strings.",
+        "additionalProperties": { "type": "string" }
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      },
+      "scenario_key": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000,
+        "description": "Optional X-Scenario-Key header value (test environment scenario selector)."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "amount": { "type": "number", "minimum": 0.01 },
+          "fees": {
+            "type": "array",
+            "description": "Fee breakdown (vat / app / merchant / stamp_duty).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "amount": { "type": "number" }
+              }
+            }
+          },
+          "billing_details": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string", "format": "email" },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "first": { "type": "string" },
+                  "middle": { "type": "string" },
+                  "last": { "type": "string" }
+                }
+              },
+              "phone": {
+                "type": "object",
+                "properties": {
+                  "country_code": { "type": "string" },
+                  "number": { "type": "string" }
+                }
+              }
+            }
+          },
+          "currency": { "type": "string", "description": "ISO 4217 currency code." },
+          "customer_id": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "disputed": { "type": "boolean" },
+          "settled": { "type": "boolean" },
+          "settlement_id": { "type": "array", "items": { "type": "string" } },
+          "meta": { "type": ["object", "null"], "additionalProperties": true },
+          "next_action": {
+            "type": ["object", "null"],
+            "description": "Discriminated by type. Possible types: redirect_url | requires_additional_fields | requires_pin | requires_otp | requires_requery | requires_capture | payment_instruction | requires_bank_transfer | qr_code.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "redirect_url",
+                  "requires_additional_fields",
+                  "requires_pin",
+                  "requires_otp",
+                  "requires_requery",
+                  "requires_capture",
+                  "payment_instruction",
+                  "requires_bank_transfer",
+                  "qr_code"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "payment_method_details": {
+            "type": "object",
+            "description": "Payment method snapshot. type discriminates the sub-object.",
+            "properties": {
+              "id": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd", "bank_transfer"]
+              }
+            },
+            "additionalProperties": true
+          },
+          "redirect_url": { "type": ["string", "null"] },
+          "refunded": { "type": "boolean" },
+          "reference": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["succeeded", "pending", "failed", "voided"]
+          },
+          "processor_response": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "description": "e.g. approved, refer_to_issuer, do_not_honor, insufficient_funds, invalid_cvv." },
+              "code": { "type": "string", "description": "Two-digit processor code (e.g. 00 approved, 55 incorrect pin)." }
+            }
+          },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "authorization is an OBJECT, not a string. Set authorization.type to one of otp | pin | external_3ds | avs and provide the matching sub-object: { type: \"otp\", otp: { code } } / { type: \"pin\", pin: { nonce, encrypted_pin } } / { type: \"external_3ds\", external_3ds: { ... } } / { type: \"avs\", avs: { address: { ... } } }. This is the primary use-case for update_charge — resolving a pending next_action.",
+    "authorization.type=pin requires encrypted_pin obtained from Flutterwave's field-level encryption flow plus a 12-char alphanumeric nonce. Never send a raw PIN — the request will be rejected.",
+    "Only meta and authorization can be PUT — the body is restricted to those two fields. amount, currency, customer_id, payment_method_id and reference are immutable once the charge is created.",
+    "Update only makes sense on a pending charge. Updating a charge that has already reached a terminal status (succeeded, failed, voided) returns 409 Conflict.",
+    "meta values must be strings (additionalProperties: string). Pass numbers/booleans as strings if you need to store them.",
+    "The response is the full charge object — same shape as get_charge — with the new processor_response and possibly an updated next_action. Re-check data.status to know whether the customer still has work to do."
+  ]
+}

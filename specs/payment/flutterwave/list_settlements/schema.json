@@ -1,0 +1,154 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_settlements",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/settlements"
+  },
+  "example_prompt": "List Flutterwave settlements from the last 30 days, 20 per page.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "page": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "description": "Page number (1-indexed)."
+      },
+      "size": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 50,
+        "default": 10,
+        "description": "Page size (10 to 50)."
+      },
+      "from": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 date-time lower bound on the time range filter."
+      },
+      "to": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 date-time upper bound on the time range filter."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "status": { "type": "string", "description": "\"success\" or \"failed\"." },
+      "message": { "type": "string" },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "page_info": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "current_page": { "type": "integer" },
+              "total_pages": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "data": {
+        "type": "array",
+        "description": "Array of settlement objects.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "net_amount": { "type": "number" },
+            "gross_amount": { "type": "number" },
+            "currency": { "type": "string", "description": "ISO 4217 currency code." },
+            "status": {
+              "type": "string",
+              "enum": [
+                "disburse-pending",
+                "pending",
+                "reviewed",
+                "approved",
+                "completed",
+                "completed-offline",
+                "failed",
+                "flagged",
+                "processing",
+                "on-hold"
+              ]
+            },
+            "due_datetime": { "type": "string", "format": "date-time" },
+            "transaction_datetime": { "type": "string", "format": "date-time" },
+            "settlement_account": { "type": "string" },
+            "fees": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "amount": { "type": "number" }
+                }
+              }
+            },
+            "chargeback": { "type": "number" },
+            "refund": { "type": "number" },
+            "destination": { "type": "string" },
+            "charge_count": { "type": "string" },
+            "created_datetime": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Page size is bounded by the API: 10 minimum, 50 maximum. Pagination metadata lives at meta.page_info (total, current_page, total_pages).",
+    "from and to must be ISO 8601 date-times (e.g. 2024-01-01T00:00:00Z). Date-only strings are rejected.",
+    "Settlements represent the funds moved from your Flutterwave balance to your bank account, not the underlying transactions. Each settlement carries net_amount/gross_amount plus a fees breakdown array.",
+    "The status field is a fixed enum (disburse-pending, pending, reviewed, approved, completed, completed-offline, failed, flagged, processing, on-hold) — match against these values, not on free-form strings."
+  ]
+}

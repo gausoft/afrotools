@@ -1,0 +1,169 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_virtual_account",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/virtual-accounts"
+  },
+  "example_prompt": "Create a static NGN virtual account for an existing customer with the customer's BVN, an alphanumeric reference and a one-day expiry.",
+  "input_schema": {
+    "type": "object",
+    "required": ["customer_id", "amount", "reference", "currency", "account_type"],
+    "properties": {
+      "customer_id": {
+        "type": "string",
+        "description": "Id of an existing Flutterwave customer the account will belong to."
+      },
+      "amount": {
+        "type": "number",
+        "minimum": 0,
+        "description": "Collection amount. Use 0 for static accounts (any amount). Specify a fixed amount for dynamic/fixed-amount accounts."
+      },
+      "reference": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 42,
+        "description": "Unique alphanumeric transaction identifier (6 to 42 characters). Must be unique across all your transactions. Reusing returns 409."
+      },
+      "currency": {
+        "type": "string",
+        "description": "ISO 4217 currency code (NGN, GHS, EGP, KES, MAD, ZAR)."
+      },
+      "account_type": {
+        "type": "string",
+        "enum": ["static", "dynamic"],
+        "description": "static (reusable, fixed account number) or dynamic (one-time per transaction)."
+      },
+      "expiry": {
+        "type": "integer",
+        "minimum": 60,
+        "maximum": 31536000,
+        "description": "Account validity in SECONDS (60 to 31,536,000 — i.e. 1 minute to 1 year). NOT an ISO 8601 datetime."
+      },
+      "narration": {
+        "type": "string",
+        "description": "Display name when the account resolves (e.g. customer-facing label)."
+      },
+      "bvn": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{10}$",
+        "description": "Customer Bank Verification Number (11 digits). Often required for Nigerian (NGN) virtual accounts."
+      },
+      "nin": {
+        "type": "string",
+        "description": "Customer National Identity Number (11 digits)."
+      },
+      "customer_account_number": {
+        "type": "string",
+        "description": "Originating bank account number. Required for EGP/KES."
+      },
+      "merchant_vat_amount": {
+        "type": "number",
+        "description": "VAT amount to be applied."
+      },
+      "bank_code": {
+        "type": "string",
+        "description": "Bank code identifier (optional, restricts which bank backs the account)."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Custom key-value string metadata stored on the virtual account.",
+        "additionalProperties": true
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Idempotency-Key header value. Same key returns the original response."
+      },
+      "scenario_key": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000,
+        "description": "Optional X-Scenario-Key header value (test environment scenario selector)."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "description": "\"success\" on 201." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Virtual account id. Store this — required to call get/update_virtual_account." },
+          "amount": { "type": "number", "description": "Expected collection amount (0 for static)." },
+          "account_number": { "type": "string", "description": "Generated bank account number to communicate to the customer." },
+          "reference": { "type": "string", "description": "Echo of the merchant-supplied reference." },
+          "account_bank_name": { "type": "string", "description": "Name of the bank backing the virtual account (e.g. WEMA BANK)." },
+          "account_type": { "type": "string", "enum": ["static", "dynamic"] },
+          "status": { "type": "string", "enum": ["active", "inactive"] },
+          "account_expiration_datetime": { "type": "string", "format": "date-time", "description": "Computed expiry timestamp." },
+          "note": { "type": "string", "description": "Message providing instructions for the bank transfer." },
+          "customer_id": { "type": "string" },
+          "created_datetime": { "type": "string", "format": "date-time" },
+          "customer_reference": { "type": "string", "description": "Reference the customer sends as narration when paying." },
+          "currency": { "type": "string" },
+          "narration": { "type": "string" },
+          "meta": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Required body fields are: customer_id, amount, reference, currency, account_type. Missing any one returns 400 REQUEST_NOT_VALID with validation_errors.",
+    "`expiry` is an INTEGER number of SECONDS (60 to 31,536,000), not an ISO 8601 timestamp. The response returns `account_expiration_datetime` as ISO 8601 — do not confuse the two.",
+    "`account_type` is mandatory: use `static` for a reusable fixed account number, `dynamic` for one-time per transaction. For static accounts pass `amount: 0` to accept any amount.",
+    "`reference` must be unique across ALL your transactions and 6–42 alphanumeric characters. Reusing a reference returns 409 RESOURCE_CONFLICT (code 10409).",
+    "`bvn` (11 digits, must start with 1–9) is typically required for Nigerian NGN accounts. `customer_account_number` is required when currency is EGP or KES.",
+    "customer_id must reference an existing customer — create the customer first via POST /customers (cus_... ids).",
+    "Successful creation returns HTTP 201, not 200. Settlement of funds is reported via the charge.completed webhook — wire it up before going live."
+  ]
+}

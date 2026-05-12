@@ -1,0 +1,129 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "get_transfer",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/transfers/{id}"
+  },
+  "example_prompt": "Fetch the current status and details of a Flutterwave v4 transfer by its ID for server-side verification before fulfilment.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Flutterwave transfer ID returned by create_transfer (e.g. trf_yuK89vb)."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "description": "bank | mobile_money | wallet | cash_pickup | crypto"
+          },
+          "action": {
+            "type": "string",
+            "description": "instant | deferred | scheduled | retry | duplicate"
+          },
+          "reference": { "type": "string", "description": "Merchant-supplied reference." },
+          "status": {
+            "type": "string",
+            "description": "NEW | PENDING | FAILED | SUCCESSFUL | CANCELLED | INITIATED"
+          },
+          "narration": { "type": "string" },
+          "source_currency": { "type": "string" },
+          "destination_currency": { "type": "string" },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "applies_to": {
+                "type": "string",
+                "description": "destination_currency | source_currency"
+              }
+            }
+          },
+          "fee": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          },
+          "debit_information": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "actual_debit_amount": { "type": "number" },
+              "rate_used": { "type": "number" },
+              "vat": { "type": "number" }
+            }
+          },
+          "recipient": { "type": "object", "description": "Recipient details (shape depends on transfer type)." },
+          "sender": { "type": "object", "description": "Sender details." },
+          "transfer_purpose": { "type": "string" },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Always verify the transfer status server-side by polling GET /transfers/{id} or by listening on the transfer webhook before considering the payout final. Webhook delivery alone should be re-checked with this endpoint.",
+    "Pass id directly in the path. Flutterwave IDs (e.g. trf_yuK89vb) are URL-safe ASCII — do not URL-encode them.",
+    "data.status is uppercase (SUCCESSFUL, PENDING, etc.). Compare case-insensitively or normalise before persisting to your own ledger."
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_transfer_rate",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/transfers/rates"
+  },
+  "example_prompt": "Request a Flutterwave FX rate quote to deliver a specific destination amount (e.g. 100 EUR) and find out how much NGN must be debited.",
+  "input_schema": {
+    "type": "object",
+    "required": ["source", "destination"],
+    "properties": {
+      "source": {
+        "type": "object",
+        "required": ["currency"],
+        "description": "Source side of the conversion (currency being debited from the wallet).",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 source currency code being debited (e.g. \"NGN\")."
+          }
+        }
+      },
+      "destination": {
+        "type": "object",
+        "required": ["currency", "amount"],
+        "description": "Destination side of the conversion (currency being credited to the recipient and the amount to deliver).",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 destination currency code (e.g. \"EUR\")."
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "Amount to convert (in destination currency). Minimum 0.000001."
+          }
+        }
+      },
+      "precision": {
+        "type": "integer",
+        "minimum": 2,
+        "maximum": 9,
+        "default": 6,
+        "description": "Number of decimal places used in the returned rate/amount (2-9, default 6)."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Required X-Trace-Id header value (12-255 chars) for request correlation."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Idempotency-Key header value (12-255 chars). Same key returns the original response."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success"], "description": "\"success\" on 201." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "required": ["id", "rate"],
+        "properties": {
+          "id": { "type": "string", "description": "Rate quote id (e.g. \"rte_r2B1d3\"). Store this — required to call get_transfer_rate and to lock the rate on a transfer." },
+          "rate": { "type": "string", "description": "Conversion rate from source to destination currency, returned as a string." },
+          "source": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "string", "description": "Amount in source currency, returned as a string." },
+              "currency": { "type": "string" }
+            }
+          },
+          "destination": {
+            "type": "object",
+            "properties": {
+              "amount": { "type": "string", "description": "Amount in destination currency, returned as a string." },
+              "currency": { "type": "string" }
+            }
+          },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": { "type": "array", "items": { "type": "object", "properties": { "field_name": { "type": "string" }, "message": { "type": "string" } } } }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "The destination side carries the amount (the amount the recipient receives); source only carries the currency. The API computes the source debit amount and returns both source.amount and destination.amount. Sending an amount on source is rejected as REQUEST_NOT_VALID.",
+    "Successful creation returns HTTP 201, not 200. Treat both as success when reading response.ok.",
+    "Numeric fields (rate, source.amount, destination.amount) are returned as STRINGS — not numbers. Parse them with Number() / parseFloat() (or keep them as strings if you need decimal precision).",
+    "precision must be between 2 and 9 inclusive (default 6); values outside this range return 400 REQUEST_NOT_VALID. The default of 6 is appropriate for most XOF/XAF/NGN/KES corridors.",
+    "X-Trace-Id is required on this endpoint (12-255 chars). Pass X-Idempotency-Key (12-255 chars) on retry-prone networks; replays return the original quote instead of producing a new one."
+  ]
+}

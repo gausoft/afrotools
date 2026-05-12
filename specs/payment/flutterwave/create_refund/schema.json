@@ -1,0 +1,113 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_refund",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/refunds"
+  },
+  "example_prompt": "Refund 12.34 of a successful Flutterwave charge as a customer-requested refund.",
+  "input_schema": {
+    "type": "object",
+    "required": ["amount", "charge_id", "reason"],
+    "properties": {
+      "amount": {
+        "type": "number",
+        "minimum": 0.01,
+        "description": "Refund amount in decimal format. Must be >= 0.01 and not exceed the original charge amount."
+      },
+      "charge_id": {
+        "type": "string",
+        "description": "Id of the charge to refund."
+      },
+      "reason": {
+        "type": "string",
+        "enum": [
+          "duplicate",
+          "fraudulent",
+          "requested_by_customer",
+          "expired_uncaptured_charge"
+        ],
+        "description": "Reason for the refund."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Optional key-value metadata object attached to the refund.",
+        "additionalProperties": { "type": "string" }
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "X-Trace-Id header value (12-255 chars). Required by the Flutterwave create-refund endpoint."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "X-Idempotency-Key header value (12-255 chars) to prevent duplicate refund processing on retry."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "amount_refunded": { "type": "number" },
+          "charge_id": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "enum": ["duplicate", "fraudulent", "requested_by_customer", "expired_uncaptured_charge"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "requires_action", "succeeded", "failed", "cancelled", "completed", "new"]
+          },
+          "meta": { "type": "object", "additionalProperties": { "type": "string" } },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": { "type": "array", "items": { "type": "object", "properties": { "field_name": { "type": "string" }, "message": { "type": "string" } } } }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Refund processing windows vary by payment method: card 3-15 days, mobile money 3-5 days, bank account ~24 hours. The HTTP response only confirms acceptance; final settlement comes later. Use get_refund to poll or the refund.completed webhook.",
+    "reason must be one of: duplicate, fraudulent, requested_by_customer, expired_uncaptured_charge. Any other value returns 400 REQUEST_NOT_VALID.",
+    "X-Trace-Id is required (12-255 chars) on this endpoint. Always also send X-Idempotency-Key on POST so retries do not create duplicate refunds.",
+    "Returns 201 with the created refund in data; the data object uses amount_refunded (not amount) and created_datetime (not created_at). 409 RESOURCE_CONFLICT typically means the charge has already been fully refunded or is in an incompatible state."
+  ]
+}

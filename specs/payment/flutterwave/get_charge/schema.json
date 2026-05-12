@@ -1,0 +1,183 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "get_charge",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/charges/{id}"
+  },
+  "example_prompt": "Fetch the latest status of a Flutterwave charge before fulfilling the order.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Charge id returned by create_charge (e.g. chg_EFAHCzELJb)."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "amount": { "type": "number", "minimum": 0.01 },
+          "currency": { "type": "string", "description": "ISO 4217 currency code." },
+          "reference": { "type": "string", "description": "Merchant reference (6-42 alphanumeric chars + hyphens)." },
+          "status": {
+            "type": "string",
+            "enum": ["succeeded", "pending", "failed", "voided"]
+          },
+          "customer_id": { "type": "string" },
+          "payment_method_id": { "type": "string" },
+          "fees": {
+            "type": "array",
+            "description": "Fee breakdown (vat / app / merchant / stamp_duty).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string" },
+                "amount": { "type": "number" }
+              }
+            }
+          },
+          "billing_details": {
+            "type": "object",
+            "properties": {
+              "email": { "type": "string", "format": "email" },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "first": { "type": "string" },
+                  "middle": { "type": "string" },
+                  "last": { "type": "string" }
+                }
+              },
+              "phone": {
+                "type": "object",
+                "properties": {
+                  "country_code": { "type": "string" },
+                  "number": { "type": "string" }
+                }
+              }
+            }
+          },
+          "description": { "type": ["string", "null"] },
+          "disputed": { "type": "boolean" },
+          "settled": { "type": "boolean" },
+          "settlement_id": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "meta": { "type": ["object", "null"], "additionalProperties": true },
+          "next_action": {
+            "type": ["object", "null"],
+            "description": "Discriminated by type. Possible types: redirect_url | requires_additional_fields | requires_pin | requires_otp | requires_requery | requires_capture | payment_instruction | requires_bank_transfer | qr_code.",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "redirect_url",
+                  "requires_additional_fields",
+                  "requires_pin",
+                  "requires_otp",
+                  "requires_requery",
+                  "requires_capture",
+                  "payment_instruction",
+                  "requires_bank_transfer",
+                  "qr_code"
+                ]
+              }
+            },
+            "additionalProperties": true
+          },
+          "payment_method_details": {
+            "type": "object",
+            "description": "Payment method snapshot. type discriminates the sub-object.",
+            "properties": {
+              "id": { "type": "string" },
+              "type": {
+                "type": "string",
+                "enum": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd", "bank_transfer"]
+              },
+              "customer_id": { "type": "string" },
+              "meta": { "type": ["object", "null"], "additionalProperties": true },
+              "device_fingerprint": { "type": "string" },
+              "client_ip": { "type": "string" },
+              "created_datetime": { "type": "string", "format": "date-time" }
+            },
+            "additionalProperties": true
+          },
+          "redirect_url": { "type": ["string", "null"] },
+          "refunded": { "type": "boolean" },
+          "processor_response": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string", "description": "e.g. approved, refer_to_issuer, do_not_honor, insufficient_funds." },
+              "code": { "type": "string", "description": "Two-digit processor code (e.g. 00 approved, 05 do not honor, 51 insufficient funds, 54 expired card, 55 incorrect pin, 91 issuer unavailable)." }
+            }
+          },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Always re-fetch the charge with get_charge before fulfilling the order. The synchronous create_charge response may return status \"pending\" when the customer must complete 3DS/OTP — only \"succeeded\" guarantees funds were captured.",
+    "data uses created_datetime (not created_at). Nested objects include billing_details (with name/phone sub-objects), fees[] (an array, not a single value), settlement_id[] (array of strings) and processor_response: { type, code }.",
+    "data.next_action is a DISCRIMINATED object — the key matching next_action.type holds the payload (e.g. next_action.redirect_url.url, next_action.requires_bank_transfer.account_number, next_action.qr_code.image). Inspect next_action.type before reading sub-fields.",
+    "data.payment_method_details.type is one of card | bank_account | mobile_money | opay | applepay | googlepay | ussd | bank_transfer. The type-keyed sub-object (e.g. payment_method_details.card.last4) carries the method-specific snapshot.",
+    "Unknown charge ids return 404. The error envelope is { status: \"failed\", error: { type, code, message } } — read error.message, not message at the top level."
+  ]
+}

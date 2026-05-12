@@ -1,0 +1,183 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_transfer_recipient",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/transfers/recipients"
+  },
+  "example_prompt": "Create a Flutterwave transfer recipient for a Nigerian bank account so payouts can be sent to that beneficiary.",
+  "input_schema": {
+    "type": "object",
+    "required": ["type"],
+    "description": "Discriminated union keyed by `type`. The required sibling object (bank, mobile_money, ...) is determined by the value of `type`. Currency-specific bank types: bank_ngn, bank_egp, bank_etb, bank_eur, bank_gbp, bank_ghs, bank_mwk, bank_usd, bank_zar, bank_kes, bank_rwf, bank_sll, bank_ugx, bank_xaf, bank_xof. Currency-specific mobile money types: mobile_money_etb, mobile_money_ghs, mobile_money_kes, mobile_money_rwf, mobile_money_tzs, mobile_money_ugx, mobile_money_zmw, mobile_money_egp, mobile_money_xaf, mobile_money_xof.",
+    "properties": {
+      "type": {
+        "type": "string",
+        "description": "Recipient type discriminator (e.g. \"bank_ngn\", \"mobile_money_etb\")."
+      },
+      "name": {
+        "type": "object",
+        "description": "Recipient name. Required for mobile_money types; optional for bank types.",
+        "properties": {
+          "first": { "type": "string", "minLength": 2, "maxLength": 50 },
+          "middle": { "type": "string", "minLength": 2, "maxLength": 50 },
+          "last": { "type": "string", "minLength": 2, "maxLength": 50 }
+        }
+      },
+      "bank": {
+        "type": "object",
+        "description": "Required when type is a bank_* variant. Required fields: account_number (digits only) and code. NGN minimum requires account_number + code.",
+        "properties": {
+          "account_number": { "type": "string", "description": "Account number (digits only)." },
+          "code": { "type": "string", "description": "Bank code (look up via list_banks)." },
+          "name": { "type": "string", "description": "Bank name." },
+          "branch": { "type": "string" },
+          "routing_number": { "type": "string" },
+          "swift_code": { "type": "string" },
+          "sort_code": { "type": "string" },
+          "account_type": { "type": "string", "enum": ["checking", "savings", "individual", "corporate"] }
+        }
+      },
+      "mobile_money": {
+        "type": "object",
+        "description": "Required when type is a mobile_money_* variant. Required: network and msisdn (6-25 digits).",
+        "properties": {
+          "network": { "type": "string", "description": "Mobile money network (e.g. MTN, AIRTEL)." },
+          "msisdn": { "type": "string", "description": "Phone number, digits only, 6-25 chars." },
+          "country": { "type": "string", "description": "ISO 3166-1 alpha-2." }
+        }
+      },
+      "phone": {
+        "type": "object",
+        "properties": {
+          "country_code": { "type": "string" },
+          "number": { "type": "string" }
+        }
+      },
+      "email": { "type": "string", "format": "email" },
+      "address": {
+        "type": "object",
+        "properties": {
+          "line1": { "type": "string" },
+          "line2": { "type": "string" },
+          "city": { "type": "string" },
+          "state": { "type": "string" },
+          "country": { "type": "string", "description": "ISO 3166-1 alpha-2." },
+          "postal_code": { "type": "string" }
+        }
+      },
+      "date_of_birth": { "type": "string", "description": "YYYY-MM-DD." },
+      "national_identification": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["PASSPORT", "DRIVERS_LICENSE", "NATIONAL_ID"] },
+          "identifier": { "type": "string", "minLength": 4, "maxLength": 40 },
+          "expiration_date": { "type": "string", "description": "YYYY-MM-DD." }
+        }
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Required X-Trace-Id header value for request correlation."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Idempotency-Key header value. Same key returns the original response."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Recipient id. Store this — required for get/delete_transfer_recipient and to issue transfers." },
+          "type": { "type": "string", "description": "Recipient type. One of: bank, mobile_money, wallet, cash_pickup, crypto." },
+          "name": {
+            "type": ["object", "null"],
+            "properties": {
+              "first": { "type": "string" },
+              "middle": { "type": "string" },
+              "last": { "type": "string" }
+            }
+          },
+          "currency": { "type": "string", "description": "ISO 4217 currency code." },
+          "bank": {
+            "type": ["object", "null"],
+            "properties": {
+              "account_number": { "type": "string" },
+              "code": { "type": "string" },
+              "name": { "type": "string" },
+              "branch": { "type": "string" },
+              "routing_number": { "type": "string" },
+              "swift_code": { "type": "string" },
+              "sort_code": { "type": "string" }
+            }
+          },
+          "mobile_money": {
+            "type": ["object", "null"],
+            "properties": {
+              "network": { "type": "string" },
+              "country": { "type": "string" },
+              "msisdn": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Request body is a discriminated union keyed by `type` — the value determines which sibling object is required. For example, type=\"bank_ngn\" requires a `bank` object with account_number + code; type=\"mobile_money_etb\" requires `name.first` + `name.last` + `mobile_money.network` + `mobile_money.msisdn`. There is no generic `details` field.",
+    "Use the currency-specific type variant (e.g. bank_ngn, bank_eur, mobile_money_etb) — not a plain \"bank\" or \"mobile_money\" string. The variant determines validation rules and supported corridors.",
+    "X-Trace-Id is REQUIRED (not optional) on this endpoint and must be 12-255 characters. Generate a UUID per request for correlation; omitting it returns a 400 REQUEST_NOT_VALID.",
+    "Successful creation returns HTTP 201, not 200. The response.data echoes the recipient with sibling keys (bank, mobile_money) populated; use response.data.id for subsequent get/delete and to target transfers.",
+    "Pass X-Idempotency-Key (12-255 chars) on retry-prone networks; replays return the original response instead of creating a duplicate recipient.",
+    "Recipient IDs returned are opaque strings. Store the id field — do not apply encodeURIComponent when constructing path URLs for get/delete."
+  ]
+}

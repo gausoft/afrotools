@@ -1,0 +1,248 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_payment_method",
+  "capability_type": "synchronous",
+  "status": "draft",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/payment-methods"
+  },
+  "example_prompt": "Tokenize a card payment method for an existing Flutterwave v4 customer using encrypted field values from the Flutterwave SDK.",
+  "input_schema": {
+    "type": "object",
+    "required": ["type"],
+    "description": "Body is a discriminated union on `type`. Exactly one of {card, bank_account, mobile_money, opay, applepay, googlepay, ussd} sub-object must be provided to match the chosen type.",
+    "properties": {
+      "type": {
+        "type": "string",
+        "enum": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd"],
+        "description": "Discriminator selecting which payment instrument to register."
+      },
+      "customer_id": {
+        "type": "string",
+        "description": "Identifier of the Flutterwave customer that will own this payment method."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Arbitrary string key-value metadata stored alongside the payment method.",
+        "additionalProperties": { "type": "string" }
+      },
+      "card": {
+        "type": "object",
+        "description": "Required when type='card'. All encrypted_* fields use Flutterwave field-level encryption.",
+        "required": ["nonce", "encrypted_card_number", "encrypted_expiry_month", "encrypted_expiry_year", "billing_address", "cof"],
+        "properties": {
+          "nonce": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 12,
+            "pattern": "^[a-zA-Z0-9]{12}$",
+            "description": "12-character alphanumeric nonce used for field-level encryption."
+          },
+          "encrypted_card_number": { "type": "string", "minLength": 1 },
+          "encrypted_expiry_month": { "type": "string", "minLength": 1 },
+          "encrypted_expiry_year": { "type": "string", "minLength": 1 },
+          "encrypted_cvv": { "type": "string", "minLength": 1 },
+          "card_holder_name": { "type": "string" },
+          "billing_address": {
+            "type": "object",
+            "required": ["line1", "city", "state", "postal_code", "country"],
+            "properties": {
+              "line1": { "type": "string", "minLength": 1 },
+              "line2": { "type": "string", "minLength": 1 },
+              "city": { "type": "string", "minLength": 1 },
+              "state": { "type": "string", "minLength": 1 },
+              "postal_code": { "type": "string", "minLength": 1 },
+              "country": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 2,
+                "description": "ISO 3166-1 alpha-2 country code, e.g. 'US', 'NG'."
+              }
+            }
+          },
+          "cof": {
+            "type": "object",
+            "description": "Credentials-on-file (recurring/MIT) parameters.",
+            "required": ["enabled"],
+            "properties": {
+              "enabled": { "type": "boolean" },
+              "agreement_id": { "type": "string" },
+              "trace_id": { "type": "string" }
+            }
+          }
+        }
+      },
+      "bank_account": {
+        "type": "object",
+        "description": "Required when type='bank_account'. Currently reserved for future expansion — pass an empty object.",
+        "additionalProperties": true
+      },
+      "mobile_money": {
+        "type": "object",
+        "description": "Required when type='mobile_money'.",
+        "required": ["network", "country_code", "phone_number"],
+        "properties": {
+          "network": {
+            "type": "string",
+            "description": "Mobile money network operator code, e.g. 'MTN', 'AIRTEL', 'VODAFONE'."
+          },
+          "country_code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 3,
+            "pattern": "^[0-9]{1,3}$",
+            "description": "Country dialling code as digits only, e.g. '234' for Nigeria."
+          },
+          "phone_number": {
+            "type": "string",
+            "minLength": 7,
+            "maxLength": 10,
+            "pattern": "^[0-9]{7,10}$",
+            "description": "Subscriber number digits only, without the country code."
+          },
+          "use_qr": {
+            "type": "boolean",
+            "description": "Set true to request QR-code initiation flow when supported by the network."
+          }
+        }
+      },
+      "opay": {
+        "type": "object",
+        "description": "Required when type='opay'. Currently reserved for future expansion — pass an empty object.",
+        "additionalProperties": true
+      },
+      "applepay": {
+        "type": "object",
+        "description": "Required when type='applepay'.",
+        "properties": {
+          "card_holder_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "pattern": "^[A-Za-z ,.'\\-]+$",
+            "description": "Letters, spaces, commas, periods, apostrophes, and hyphens only."
+          }
+        }
+      },
+      "googlepay": {
+        "type": "object",
+        "description": "Required when type='googlepay'.",
+        "properties": {
+          "card_holder_name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50,
+            "pattern": "^[A-Za-z ,.'\\-]+$",
+            "description": "Letters, spaces, commas, periods, apostrophes, and hyphens only."
+          }
+        }
+      },
+      "ussd": {
+        "type": "object",
+        "description": "Required when type='ussd'.",
+        "required": ["account_bank"],
+        "properties": {
+          "account_bank": {
+            "type": "string",
+            "minLength": 3,
+            "pattern": "^[0-9]{3,}$",
+            "description": "Nigerian bank code, digits only (3 or more), e.g. '050'."
+          }
+        }
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Idempotency-Key header to safely retry the same payment method creation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd"]
+          },
+          "customer_id": { "type": "string" },
+          "meta": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "device_fingerprint": { "type": "string" },
+          "client_ip": { "type": "string" },
+          "created_datetime": { "type": "string", "format": "date-time" },
+          "card": { "type": "object", "additionalProperties": true },
+          "bank_account": { "type": "object", "additionalProperties": true },
+          "mobile_money": { "type": "object", "additionalProperties": true },
+          "opay": { "type": "object", "additionalProperties": true },
+          "applepay": { "type": "object", "additionalProperties": true },
+          "googlepay": { "type": "object", "additionalProperties": true },
+          "ussd": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "The body is a discriminated union on `type`. For each type the per-type sub-object key matches the type name (card, mobile_money, ussd, applepay, googlepay, bank_account, opay) — there is NO generic `details` field.",
+    "Card fields are field-level encrypted: send nonce (12 alphanumeric chars) plus encrypted_card_number / encrypted_expiry_month / encrypted_expiry_year (and optional encrypted_cvv). Generate these using the Flutterwave-provided SDK — never POST raw PAN/CVV directly.",
+    "mobile_money requires three fields: network (e.g. 'MTN'), country_code (digits only, 1-3 chars, e.g. '234'), phone_number (digits only, 7-10 chars, without country code).",
+    "ussd.account_bank is the Nigerian bank code (digits only, 3+ chars, e.g. '050').",
+    "applepay.card_holder_name / googlepay.card_holder_name accept 2-50 chars of letters, spaces, commas, periods, apostrophes and hyphens only.",
+    "bank_account and opay sub-objects are documented as reserved for future expansion — pass {} when registering those types.",
+    "Send X-Idempotency-Key (12-255 chars) when retrying creation to avoid duplicate stored instruments.",
+    "Successful response is 201 Created with the same per-type key echoed back plus device_fingerprint, client_ip, and created_datetime."
+  ]
+}
