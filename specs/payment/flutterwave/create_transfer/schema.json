@@ -1,0 +1,249 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_transfer",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/transfers"
+  },
+  "example_prompt": "Create a Flutterwave v4 transfer to a pre-registered recipient using a previously created sender_id and recipient_id.",
+  "input_schema": {
+    "type": "object",
+    "required": ["action", "payment_instruction"],
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["instant", "deferred", "scheduled"],
+        "description": "Execution mode. \"instant\" disburses immediately. \"deferred\" creates the transfer but holds disbursement until explicitly initiated via PUT /transfers/{id} with initiate=true. \"scheduled\" disburses at the date_time provided in disburse_option."
+      },
+      "payment_instruction": {
+        "type": "object",
+        "required": ["recipient_id", "source_currency", "amount"],
+        "description": "The transfer instruction referencing pre-created sender and recipient resources.",
+        "properties": {
+          "recipient_id": {
+            "type": "string",
+            "description": "ID of a recipient pre-created via POST /transfers/recipients."
+          },
+          "source_currency": {
+            "type": "string",
+            "description": "ISO 4217 source currency code (the currency debited from the merchant's wallet)."
+          },
+          "amount": {
+            "type": "object",
+            "required": ["value", "applies_to"],
+            "properties": {
+              "value": {
+                "type": "number",
+                "minimum": 0.01,
+                "description": "Transfer amount, decimal, minimum 0.01."
+              },
+              "applies_to": {
+                "type": "string",
+                "enum": ["destination_currency", "source_currency"],
+                "description": "Whether `value` is denominated in the destination_currency or source_currency. The other side is computed via Flutterwave's FX rate."
+              }
+            }
+          },
+          "sender_id": {
+            "type": "string",
+            "description": "Optional. ID of a sender pre-created via POST /transfers/senders. Required for cross-border corridors that demand sender KYC (USD/GBP/EUR/EGP)."
+          }
+        }
+      },
+      "reference": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 42,
+        "pattern": "^[A-Za-z0-9-]+$",
+        "description": "Optional merchant-supplied unique reference. Alphanumeric and hyphens, 6-42 chars. Must be unique — reusing returns 409."
+      },
+      "narration": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180,
+        "description": "Optional narration shown to the recipient where supported by the rail."
+      },
+      "disburse_option": {
+        "type": "object",
+        "description": "Required when action=\"scheduled\". Defines when the transfer is released.",
+        "properties": {
+          "date_time": {
+            "type": "string",
+            "description": "Scheduled disbursement date/time in 'YYYY-MM-DD HH:MM:SS' (24-hour) format."
+          },
+          "timezone": {
+            "type": "string",
+            "description": "IANA timezone, e.g. UTC, Africa/Lagos, America/New_York, Asia/Tokyo, Europe/London."
+          }
+        }
+      },
+      "callback_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "Webhook URL Flutterwave POSTs to when the transfer status changes. Overrides the merchant default webhook URL."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Arbitrary key/value metadata stored on the transfer and echoed back in webhook payloads.",
+        "additionalProperties": { "type": "string" }
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "description": "201 Created. Standard Flutterwave envelope with the full transfer object.",
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Transfer ID — use with /transfers/{id} for retrieval, update and retry." },
+          "type": { "type": "string", "enum": ["bank", "mobile_money", "wallet", "cash_pickup", "crypto"] },
+          "action": { "type": "string", "enum": ["instant", "deferred", "scheduled", "retry", "duplicate"] },
+          "reference": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["NEW", "PENDING", "FAILED", "SUCCESSFUL", "CANCELLED", "INITIATED"],
+            "description": "Transfer state (UPPERCASE per Flutterwave v4)."
+          },
+          "narration": { "type": ["string", "null"] },
+          "source_currency": { "type": "string" },
+          "destination_currency": { "type": "string" },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "applies_to": { "type": "string", "enum": ["destination_currency", "source_currency"] }
+            }
+          },
+          "fee": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "value": { "type": "number", "minimum": 0 }
+            }
+          },
+          "debit_information": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "actual_debit_amount": { "type": "number" },
+              "rate_used": { "type": "number" },
+              "vat": { "type": "number" }
+            }
+          },
+          "extra_information": {
+            "type": "object",
+            "properties": { "amount_credited": { "type": "string" } }
+          },
+          "payment_information": {
+            "type": "object",
+            "properties": { "proof": { "type": "string" } }
+          },
+          "disburse_option": {
+            "type": ["object", "null"],
+            "properties": {
+              "date_time": { "type": ["string", "null"] },
+              "timezone": { "type": "string" }
+            }
+          },
+          "callback_url": { "type": ["string", "null"] },
+          "provider_response": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "code": { "type": "string", "description": "4-digit numeric string." },
+              "message": { "type": "string" }
+            }
+          },
+          "recipient": {
+            "type": "object",
+            "description": "Polymorphic recipient (bank | mobile_money | wallet | cash_pickup | crypto)."
+          },
+          "sender": {
+            "type": "object",
+            "description": "Resolved sender object."
+          },
+          "transfer_purpose": {
+            "type": "string",
+            "enum": [
+              "family_maintenance",
+              "personal",
+              "education",
+              "medical",
+              "donation",
+              "business",
+              "salary_payment",
+              "investment",
+              "loan_repayment",
+              "bill_payment",
+              "travel",
+              "gift",
+              "other"
+            ]
+          },
+          "meta": { "type": "object", "additionalProperties": { "type": "string" } },
+          "created_datetime": { "type": "string", "format": "date-time" },
+          "reversal": {
+            "type": ["object", "null"],
+            "properties": {
+              "reversal_datetime": { "type": "string", "format": "date-time" },
+              "initial_status": { "type": "string" },
+              "reconciliation_status": { "type": "string" },
+              "reconciliation_type": { "type": "string", "enum": ["D", "C"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "POST /transfers requires recipient_id (and sender_id for cross-border) pre-created via POST /transfers/recipients and POST /transfers/senders. Use POST /direct-transfers (orchestrator) if you want to inline sender/recipient data without pre-creating them.",
+    "payment_instruction.amount.applies_to controls whether amount.value is denominated in destination_currency or source_currency — pick deliberately on cross-currency corridors because Flutterwave will FX the other side using its quoted rate.",
+    "Always send X-Trace-Id (12-255 chars, required) and X-Idempotency-Key (12-255 chars, optional but strongly recommended) so retries are safe and the request is correlated in Flutterwave's logs.",
+    "When action is \"scheduled\", disburse_option (date_time YYYY-MM-DD HH:MM:SS + timezone) becomes required. When action is \"deferred\", the transfer is created in NEW/PENDING but not disbursed until PUT /transfers/{id} with initiate=true is called.",
+    "Reference is optional but if supplied must be 6-42 alphanumeric+hyphen characters and unique across all transactions — reusing returns 409 RESOURCE_CONFLICT.",
+    "Response status values are UPPERCASE (NEW, PENDING, FAILED, SUCCESSFUL, CANCELLED, INITIATED). Do not lowercase before comparison."
+  ]
+}

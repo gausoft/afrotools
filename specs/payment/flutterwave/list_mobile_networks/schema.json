@@ -1,0 +1,91 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_mobile_networks",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/mobile-networks"
+  },
+  "example_prompt": "List the mobile money networks available in Kenya so I can render them in a payment method picker.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "country": {
+        "type": "string",
+        "enum": ["CG", "CM", "CI", "EG", "ET", "GA", "GH", "KE", "MW", "RW", "SN", "TZ", "TD", "UG", "ZM"],
+        "description": "ISO 3166-1 alpha-2 country code. Required: mobile network catalogue is per-country."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    },
+    "required": ["country"]
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "array",
+        "description": "Array of mobile network operators supported in the requested country.",
+        "items": {
+          "type": "object",
+          "required": ["id", "network", "name"],
+          "properties": {
+            "id": { "type": "string", "description": "Mobile network identifier (e.g. mob_cYjd92Qk) used in subsequent charge / wallet calls." },
+            "network": { "type": "string", "description": "Network short code (e.g. MTN, AIRTEL)." },
+            "name": { "type": "string", "description": "Operator commercial name (e.g. MTN Mobile Money)." }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "The country query parameter is mandatory — the mobile network catalogue differs per country. Omitting it returns 400 REQUEST_NOT_VALID with a validation_errors entry on 'country'.",
+    "Supported countries are restricted to the ISO 3166-1 alpha-2 enum: CG, CM, CI, EG, ET, GA, GH, KE, MW, RW, SN, TZ, TD, UG, ZM. Passing a country outside this set returns 400.",
+    "Cache the response per country: the operator list changes very rarely and re-fetching on every checkout wastes both a token slot and a /mobile-networks call."
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "get_virtual_account",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/virtual-accounts/{id}"
+  },
+  "example_prompt": "Fetch the current status and details of a Flutterwave virtual account by its id.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Virtual account id (e.g. \"va_EFAHCzELJb\"), returned by create_virtual_account."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Virtual account id (e.g. \"va_EFAHCzELJb\")." },
+          "amount": { "type": ["number", "null"], "description": "Fixed expected amount, or null for dynamic accounts." },
+          "account_number": { "type": "string", "description": "Generated bank account number (e.g. \"7824822527\")." },
+          "reference": { "type": ["string", "null"], "description": "Merchant-supplied reference set at creation time." },
+          "account_bank_name": { "type": "string", "description": "Name of the issuing bank (e.g. \"WEMA BANK\")." },
+          "account_type": { "type": "string", "enum": ["static", "dynamic"], "description": "Account type: static accounts are permanent; dynamic accounts expire." },
+          "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current state of the virtual account." },
+          "account_expiration_datetime": { "type": ["string", "null"], "format": "date-time", "description": "Expiry timestamp (ISO 8601). May be null for static accounts." },
+          "note": { "type": ["string", "null"], "description": "Display note shown to the payer (e.g. business name)." },
+          "customer_id": { "type": "string", "description": "Linked customer id." },
+          "customer_reference": { "type": ["string", "null"], "description": "Optional customer-side reference (e.g. \"AEGP2345\")." },
+          "currency": { "type": "string", "description": "ISO 4217 currency, most commonly \"NGN\" for Nigeria bank transfers." },
+          "narration": { "type": ["string", "null"], "description": "Narration that appears on the payer's bank statement." },
+          "meta": { "type": ["object", "null"], "additionalProperties": true },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "data.account_type is \"static\" or \"dynamic\". Dynamic accounts have a non-null account_expiration_datetime; static accounts are permanent and may have account_expiration_datetime=null.",
+    "data.status is only \"active\" or \"inactive\". Use update_virtual_account with action_type=\"update_status\" and status=\"inactive\" to deactivate; there is no \"expired\" status — dynamic accounts simply stop accepting payments after account_expiration_datetime.",
+    "Unknown ids return 404 with the canonical error shape. The id is the virtual account id (e.g. \"va_xxx\"), distinct from customer_id and from account_number."
+  ]
+}

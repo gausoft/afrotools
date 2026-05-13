@@ -1,0 +1,235 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_charges",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/charges"
+  },
+  "example_prompt": "List successful Flutterwave charges in NGN from the last 30 days, paginating 20 per page.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": ["succeeded", "pending", "failed", "voided"],
+        "description": "Filter by charge status."
+      },
+      "reference": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 42,
+        "pattern": "^[a-zA-Z0-9\\-]+$",
+        "description": "Filter by the merchant-supplied unique reference (6-42 alphanumeric chars with hyphens)."
+      },
+      "from": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 date-time lower bound on creation date (e.g. 2025-04-21T10:55:16Z)."
+      },
+      "to": {
+        "type": "string",
+        "format": "date-time",
+        "description": "ISO 8601 date-time upper bound on creation date (e.g. 2025-05-21T10:48:18Z)."
+      },
+      "customer_id": {
+        "type": "string",
+        "description": "Filter by the customer that owns the charges (e.g. cus_3XarBILKQS)."
+      },
+      "virtual_account_id": {
+        "type": "string",
+        "description": "Filter by the virtual account that received the charges (e.g. van_gLKQRnsjzA)."
+      },
+      "payment_method_id": {
+        "type": "string",
+        "description": "Filter by the payment method used (e.g. pmd_WRq7L4TM8p)."
+      },
+      "order_id": {
+        "type": "string",
+        "description": "Filter by the parent order id (e.g. ord_WRq7L4TM8p — preauth/capture flows)."
+      },
+      "page": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "description": "Page number (1-indexed; most recent records on page 1)."
+      },
+      "size": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 50,
+        "default": 10,
+        "description": "Page size (10 to 50)."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": ["success", "failed"],
+        "description": "Outcome flag."
+      },
+      "message": { "type": "string" },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "page_info": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "current_page": { "type": "integer" },
+              "total_pages": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "data": {
+        "type": "array",
+        "description": "Array of charge objects (max 10 per page by default).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string", "description": "Charge id (e.g. chg_nONgeAGY97)." },
+            "amount": { "type": "number" },
+            "fees": {
+              "type": "array",
+              "description": "Fee breakdown applied to the charge.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Fee classification: vat | app | merchant | stamp_duty."
+                  },
+                  "amount": { "type": "number" }
+                }
+              }
+            },
+            "billing_details": {
+              "type": "object",
+              "properties": {
+                "email": { "type": "string" },
+                "name": {
+                  "type": "object",
+                  "properties": {
+                    "first": { "type": "string" },
+                    "middle": { "type": "string" },
+                    "last": { "type": "string" }
+                  }
+                },
+                "phone": {
+                  "type": "object",
+                  "properties": {
+                    "country_code": { "type": "string" },
+                    "number": { "type": "string" }
+                  }
+                }
+              }
+            },
+            "currency": { "type": "string" },
+            "customer_id": { "type": "string" },
+            "description": { "type": ["string", "null"] },
+            "disputed": { "type": "boolean" },
+            "settled": { "type": "boolean" },
+            "settlement_id": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "meta": { "type": ["object", "null"], "additionalProperties": true },
+            "next_action": {
+              "type": ["object", "null"],
+              "description": "Discriminated by type: redirect_url | requires_otp | requires_pin | requires_additional_fields | requires_requery | requires_capture | payment_instruction | requires_bank_transfer | qr_code.",
+              "properties": {
+                "type": { "type": "string" }
+              },
+              "additionalProperties": true
+            },
+            "payment_method_details": {
+              "type": "object",
+              "description": "Payment method snapshot. type discriminates the sub-object (card, bank_account, mobile_money, opay, applepay, googlepay, ussd, bank_transfer).",
+              "properties": {
+                "id": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "enum": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd", "bank_transfer"]
+                },
+                "customer_id": { "type": "string" }
+              },
+              "additionalProperties": true
+            },
+            "redirect_url": { "type": ["string", "null"] },
+            "refunded": { "type": "boolean" },
+            "reference": { "type": "string" },
+            "status": {
+              "type": "string",
+              "enum": ["succeeded", "pending", "failed", "voided"]
+            },
+            "processor_response": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "description": "e.g. approved, refer_to_issuer." },
+                "code": { "type": "string", "description": "Processor response code (e.g. \"00\")." }
+              }
+            },
+            "created_datetime": { "type": "string", "format": "date-time" }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Page size is bounded by the API: 10 minimum, 50 maximum. Requesting size=5 or size=100 returns a 400 error.",
+    "from and to must be valid ISO 8601 date-times (e.g. 2024-01-01T00:00:00Z). Date-only strings are rejected.",
+    "Pagination uses meta.page_info.total / current_page / total_pages — not a flat meta.total. Increment page until current_page === total_pages.",
+    "Each charge in data[] uses created_datetime (not created_at) and embeds nested billing_details, payment_method_details, fees[], settlement_id[], and a discriminated next_action object. Do not assume flat fields.",
+    "All query parameters are optional. Omit them all to receive the first 10 charges across every status."
+  ]
+}

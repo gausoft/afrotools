@@ -1,0 +1,86 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "get_wallet_balance",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/wallets/balances/{currency}"
+  },
+  "example_prompt": "Show me the available balance in my Flutterwave NGN wallet before I trigger a batch of payouts.",
+  "input_schema": {
+    "type": "object",
+    "required": ["currency"],
+    "properties": {
+      "currency": {
+        "type": "string",
+        "description": "ISO 4217 currency code of the wallet to read (e.g. NGN, KES, GHS). Substituted into the URL path."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "description": "Balance details for the requested currency wallet.",
+        "required": ["currency", "available_balance"],
+        "properties": {
+          "currency": { "type": "string", "description": "ISO 4217 currency code of this wallet." },
+          "available_balance": { "type": "number", "description": "Amount available for outgoing payments in this currency." }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "The path is /wallets/balances/{currency} (plural 'balances' followed by the currency code). A common mistake is /wallets/{currency}/balance — that path returns 404.",
+    "Only available_balance is returned — there is no separate ledger_balance field. Pending credits are not exposed via this endpoint; treat available_balance as the spendable amount for outbound transfers.",
+    "Requesting a currency you have not been provisioned for returns 404 — call GET /wallets/balances first to discover the currencies you actually hold."
+  ]
+}

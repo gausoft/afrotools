@@ -1,0 +1,255 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "create_orchestrator_transfer",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/direct-transfers"
+  },
+  "example_prompt": "Create a Flutterwave v4 orchestrated transfer inline (without pre-creating sender or recipient) to send a payout across borders in a single request.",
+  "input_schema": {
+    "type": "object",
+    "required": ["payment_instruction"],
+    "properties": {
+      "reference": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 42,
+        "pattern": "^[A-Za-z0-9-]+$",
+        "description": "Optional merchant-supplied unique reference. Alphanumeric and hyphens, 6-42 chars. Reusing returns 409."
+      },
+      "narration": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 180,
+        "description": "Optional narration shown to the recipient where supported."
+      },
+      "transfer_purpose": {
+        "type": "string",
+        "enum": [
+          "family_maintenance",
+          "personal",
+          "education",
+          "medical",
+          "donation",
+          "business",
+          "salary_payment",
+          "investment",
+          "loan_repayment",
+          "bill_payment",
+          "travel",
+          "gift",
+          "other"
+        ],
+        "description": "Purpose of the transfer. Required for bank_egp instructions; optional for other corridors."
+      },
+      "payment_instruction": {
+        "type": "object",
+        "required": ["type", "source_currency", "amount", "recipient"],
+        "description": "Discriminated union keyed on `type`. The destination_currency is fixed by `type` (e.g. bank_ngn => NGN). The shape of `recipient` and `sender` varies by corridor (bank_ngn_instruction, bank_usd_instruction, bank_gbp_instruction, bank_eur_instruction, bank_egp_instruction, bank_etb_instruction, bank_ghs_instruction, bank_mwk_instruction, bank_zar_instruction).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "bank_ngn",
+              "bank_usd",
+              "bank_gbp",
+              "bank_eur",
+              "bank_egp",
+              "bank_etb",
+              "bank_ghs",
+              "bank_mwk",
+              "bank_zar"
+            ],
+            "description": "Discriminator that selects the corridor and fixes the destination currency."
+          },
+          "destination_currency": {
+            "type": "string",
+            "description": "Read-only. Inferred from `type` (e.g. NGN for bank_ngn)."
+          },
+          "source_currency": {
+            "type": "string",
+            "description": "ISO 4217 source currency code."
+          },
+          "amount": {
+            "type": "object",
+            "required": ["value", "applies_to"],
+            "properties": {
+              "value": { "type": "number", "minimum": 0.01, "description": "Transfer amount, decimal, minimum 0.01." },
+              "applies_to": {
+                "type": "string",
+                "enum": ["destination_currency", "source_currency"],
+                "description": "Whether `value` is denominated in the destination or source currency."
+              }
+            }
+          },
+          "recipient": {
+            "type": "object",
+            "description": "Corridor-specific recipient shape. For bank_ngn: `{ bank: { account_number, code } }`. For bank_usd: full name+phone+email+address+bank (account_number 5-17, account_type checking|savings, routing_number 6-9 digits, swift_code 8-11). For bank_gbp: name+phone+email+address+bank (account_number 8-35, account_type individual|corporate, name 2-60, sort_code 4-15). For bank_eur: name+phone+email+address+bank (account_number 8-35, name 2-60, swift_code 4-15). For bank_egp: bank (account_number 8-32, code), name, national_identification (type PASSPORT|DRIVERS_LICENSE|NATIONAL_ID, identifier, expiration_date), phone, address. For bank_etb: name + bank (account_number 7-24, code). For bank_ghs: name + bank (account_number 7-35, code, branch). For bank_mwk: name + bank (account_number 5-19, code, optional branch). For bank_zar: name+phone+email+address + bank (account_number 7-11, code)."
+          },
+          "sender": {
+            "type": "object",
+            "description": "Corridor-specific sender shape (optional for purely local corridors). For bank_ngn / bank_etb / bank_ghs / bank_mwk / bank_zar: `{ name: { first, last } }`. For bank_usd / bank_gbp / bank_eur: name+email+address+phone. For bank_egp: name, national_identification, date_of_birth (YYYY-MM-DD), phone, email, address."
+          }
+        }
+      },
+      "disburse_option": {
+        "type": "object",
+        "properties": {
+          "date_time": { "type": "string", "description": "Scheduled disbursement date/time in 'YYYY-MM-DD HH:MM:SS' (24-hour) format." },
+          "timezone": { "type": "string", "description": "IANA timezone (Africa/Cairo, Africa/Lagos, America/New_York, Asia/Dubai, Europe/London, UTC, ...)." }
+        },
+        "description": "Optional disbursement scheduling."
+      },
+      "callback_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "Webhook URL Flutterwave POSTs to on transfer status changes. Overrides the merchant default webhook URL."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Arbitrary key/value metadata stored on the transfer.",
+        "additionalProperties": { "type": "string" }
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "description": "201 Created. Standard Flutterwave envelope with the full orchestrated transfer object.",
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Transfer ID — use with /transfers/{id} for retrieval, update and retry." },
+          "type": { "type": "string", "enum": ["bank", "mobile_money", "wallet", "cash_pickup", "crypto"] },
+          "action": { "type": "string", "enum": ["instant", "deferred", "scheduled", "retry", "duplicate"] },
+          "reference": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["NEW", "PENDING", "FAILED", "SUCCESSFUL", "CANCELLED", "INITIATED"],
+            "description": "Transfer state (UPPERCASE per Flutterwave v4)."
+          },
+          "narration": { "type": ["string", "null"] },
+          "source_currency": { "type": "string" },
+          "destination_currency": { "type": "string" },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "applies_to": { "type": "string", "enum": ["destination_currency", "source_currency"] }
+            }
+          },
+          "fee": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "value": { "type": "number", "minimum": 0 }
+            }
+          },
+          "debit_information": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "actual_debit_amount": { "type": "number" },
+              "rate_used": { "type": "number" },
+              "vat": { "type": "number" }
+            }
+          },
+          "extra_information": {
+            "type": "object",
+            "properties": { "amount_credited": { "type": "string" } }
+          },
+          "payment_information": {
+            "type": "object",
+            "properties": { "proof": { "type": "string" } }
+          },
+          "disburse_option": {
+            "type": ["object", "null"],
+            "properties": {
+              "date_time": { "type": ["string", "null"] },
+              "timezone": { "type": "string" }
+            }
+          },
+          "callback_url": { "type": ["string", "null"] },
+          "provider_response": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "code": { "type": "string", "description": "4-digit numeric string." },
+              "message": { "type": "string" }
+            }
+          },
+          "recipient": {
+            "type": "object",
+            "description": "Resolved recipient including the auto-created recipient.id."
+          },
+          "sender": {
+            "type": "object",
+            "description": "Resolved sender including the auto-created sender.id."
+          },
+          "transfer_purpose": { "type": "string" },
+          "meta": { "type": "object", "additionalProperties": { "type": "string" } },
+          "created_datetime": { "type": "string", "format": "date-time" },
+          "reversal": {
+            "type": ["object", "null"],
+            "properties": {
+              "reversal_datetime": { "type": "string", "format": "date-time" },
+              "initial_status": { "type": "string" },
+              "reconciliation_status": { "type": "string" },
+              "reconciliation_type": { "type": "string", "enum": ["D", "C"] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "POST /direct-transfers is the orchestrator variant: it accepts inline sender and recipient objects and creates those records on the fly, returning their ids in the response. Use it when you do not want to pre-call POST /transfers/senders and POST /transfers/recipients. For repeated payouts to the same beneficiary, switch to POST /transfers with stored sender_id/recipient_id.",
+    "payment_instruction.type is a discriminator that fixes the destination corridor (bank_ngn, bank_usd, bank_gbp, bank_eur, bank_egp, bank_etb, bank_ghs, bank_mwk, bank_zar). The required shape of recipient and sender changes per type — sending a bank_ngn recipient under bank_usd returns 400 with validation_errors.",
+    "Reference is optional but if supplied must be 6-42 alphanumeric+hyphen characters and unique. Always send X-Trace-Id (12-255 chars, required) and X-Idempotency-Key (12-255 chars, optional but strongly recommended) so retries are safe and the request is correlated in Flutterwave's logs.",
+    "amount.applies_to controls whether amount.value is denominated in destination_currency or source_currency — pick deliberately on cross-currency corridors, because Flutterwave will FX the other side using its quoted rate.",
+    "For bank_egp, transfer_purpose is required and national_identification (type/identifier/expiration_date) plus date_of_birth on the sender are mandatory. Skipping them returns 400.",
+    "Response status values are UPPERCASE (NEW, PENDING, FAILED, SUCCESSFUL, CANCELLED, INITIATED). Do not lowercase before comparison."
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_banks",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/banks"
+  },
+  "example_prompt": "Fetch the list of Nigerian banks supported by Flutterwave so I can populate a bank-transfer dropdown.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "country": {
+        "type": "string",
+        "enum": ["CM", "CI", "CG", "EG", "ET", "GA", "GH", "IN", "KE", "MW", "NG", "RW", "SL", "SN", "TD", "TZ", "UG", "US", "ZA", "ZM"],
+        "description": "ISO 3166-1 alpha-2 country code. Required."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    },
+    "required": ["country"]
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "array",
+        "description": "Array of bank objects supported in the requested country.",
+        "items": {
+          "type": "object",
+          "required": ["id", "code", "name"],
+          "properties": {
+            "id": { "type": "string", "description": "Bank identifier (e.g. bnk_cYjd92Qk) used to fetch branches and create payouts." },
+            "code": { "type": "string", "description": "Local bank code (e.g. 035 for Access Bank in NG)." },
+            "name": { "type": "string", "description": "Bank commercial name (e.g. Access Bank)." }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "The country query parameter is required. Calling /banks without country returns 400 REQUEST_NOT_VALID with validation_errors[0].field_name == 'country'.",
+    "Use bank.id (e.g. bnk_cYjd92Qk) when chaining into GET /banks/{id}/branches; use bank.code when building a payout where the destination provider expects the local routing code.",
+    "Bank lists change rarely — cache the response per country with a 24h TTL to avoid burning a token request on every checkout."
+  ]
+}

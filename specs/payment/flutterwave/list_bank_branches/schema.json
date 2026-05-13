@@ -1,0 +1,92 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_bank_branches",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/banks/{id}/branches"
+  },
+  "example_prompt": "List the branches for the selected bank so I can ask the user to pick their home branch before processing a payout.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Bank id returned by GET /banks (e.g. bnk_xC78Ibn). Substituted into the URL path."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    },
+    "required": ["id"]
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "array",
+        "description": "Array of branch objects for the requested bank.",
+        "items": {
+          "type": "object",
+          "required": ["id", "code", "name"],
+          "properties": {
+            "id": { "type": "string", "description": "Branch identifier (e.g. brh_Ka89d1)." },
+            "code": { "type": "string", "description": "Local branch / sort code (e.g. GH190101)." },
+            "name": { "type": "string", "description": "Branch name (e.g. STANBIC BANK GHANA LTD-ACCRA MAIN)." },
+            "swift_code": { "type": "string", "description": "8-character SWIFT/BIC code (e.g. SBICGHAC)." },
+            "bic": { "type": "string", "description": "11-character SWIFT/BIC code (e.g. SBICGHACXXX)." }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Not every bank has branches (mobile-first and digital-only banks return an empty array). Treat an empty data array as a valid 'no branches required' state, not an error.",
+    "The id path parameter must be the bank id returned by GET /banks (e.g. bnk_xC78Ibn). Passing a sort code, SWIFT code, or commercial name will return 404 NOT_FOUND.",
+    "Both swift_code (8 chars) and bic (11 chars, with XXX branch suffix) are returned. Use bic for SWIFT MT103 wires; use code for local routing."
+  ]
+}

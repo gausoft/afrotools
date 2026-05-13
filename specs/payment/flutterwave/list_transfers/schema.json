@@ -1,0 +1,192 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_transfers",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/transfers"
+  },
+  "example_prompt": "List the most recent Flutterwave v4 transfers filtered by status, date range or recipient, paginated for reconciliation.",
+  "input_schema": {
+    "type": "object",
+    "description": "Query string parameters. All optional.",
+    "properties": {
+      "size": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 50,
+        "default": 10,
+        "description": "Length of data returned. Defaults to 10."
+      },
+      "next": {
+        "type": "string",
+        "description": "Cursor returned in data.cursor.next from the previous page for forward pagination."
+      },
+      "previous": {
+        "type": "string",
+        "description": "Cursor returned in data.cursor.previous for backward pagination."
+      },
+      "from": {
+        "type": "string",
+        "format": "date-time",
+        "description": "Start date in ISO 8601 format."
+      },
+      "to": {
+        "type": "string",
+        "format": "date-time",
+        "description": "End date in ISO 8601 format."
+      },
+      "bulk_id": {
+        "type": "string",
+        "description": "Filter by the ID of a bulk transfer."
+      },
+      "recipient_id": {
+        "type": "string",
+        "description": "Filter by recipient ID."
+      },
+      "sender_id": {
+        "type": "string",
+        "description": "Filter by sender ID."
+      },
+      "destination_currency": {
+        "type": "string",
+        "description": "Filter by destination currency code (ISO 4217)."
+      },
+      "source_currency": {
+        "type": "string",
+        "description": "Filter by source currency code (ISO 4217)."
+      },
+      "action": {
+        "type": "string",
+        "enum": ["instant", "deferred", "scheduled", "retry"],
+        "description": "Filter by transfer action."
+      },
+      "type": {
+        "type": "string",
+        "enum": ["bank", "mobile_money", "wallet", "cash_pickup"],
+        "description": "Filter by transfer type."
+      },
+      "status": {
+        "type": "string",
+        "enum": ["new", "pending", "failed", "successful", "cancelled"],
+        "description": "Filter by transfer status."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"], "description": "Envelope status." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "cursor": {
+            "type": "object",
+            "description": "Cursor-based pagination metadata.",
+            "properties": {
+              "next": { "type": "string" },
+              "previous": { "type": "string" },
+              "limit": { "type": "integer" },
+              "total": { "type": "integer" },
+              "has_more_items": { "type": "boolean" }
+            }
+          },
+          "transfers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" },
+                "type": {
+                  "type": "string",
+                  "description": "bank | mobile_money | wallet | cash_pickup | crypto"
+                },
+                "action": {
+                  "type": "string",
+                  "description": "instant | deferred | scheduled | retry | duplicate"
+                },
+                "reference": { "type": "string" },
+                "status": {
+                  "type": "string",
+                  "description": "NEW | PENDING | FAILED | SUCCESSFUL | CANCELLED | INITIATED"
+                },
+                "source_currency": { "type": "string" },
+                "destination_currency": { "type": "string" },
+                "amount": {
+                  "type": "object",
+                  "properties": {
+                    "value": { "type": "number" },
+                    "applies_to": {
+                      "type": "string",
+                      "description": "destination_currency | source_currency"
+                    }
+                  }
+                },
+                "fee": {
+                  "type": "object",
+                  "properties": {
+                    "currency": { "type": "string" },
+                    "value": { "type": "number" }
+                  }
+                },
+                "created_datetime": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Pagination is cursor-based, not page-based. Paginate by reading data.cursor.next from each response and passing it as the 'next' query parameter on the following call. Stop when data.cursor.has_more_items === false.",
+    "Status filter accepts lowercase values (new, pending, failed, successful, cancelled) but the returned 'status' field is uppercase (NEW, PENDING, ...). Compare case-insensitively when filtering client-side.",
+    "size is bounded to 10–50; values outside this range return 400 REQUEST_NOT_VALID.",
+    "transfer.amount.applies_to indicates which currency the value is denominated in — read source_currency and destination_currency together with amount.applies_to before reconciling."
+  ]
+}

@@ -1,0 +1,202 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "list_transfer_recipients",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/transfers/recipients"
+  },
+  "example_prompt": "List the next page of Flutterwave transfer recipients using a cursor returned by a previous call, 20 per page.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "size": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 50,
+        "default": 10,
+        "description": "Number of recipients per page (10-50, default 10)."
+      },
+      "next": {
+        "type": "string",
+        "description": "Cursor token returned by a previous response (data.cursor.next) to fetch the next page."
+      },
+      "previous": {
+        "type": "string",
+        "description": "Cursor token returned by a previous response (data.cursor.previous) to fetch the previous page."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Trace-Id header value for request correlation."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success", "failed"] },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "required": ["cursor", "recipients"],
+        "properties": {
+          "cursor": {
+            "type": "object",
+            "description": "Cursor-based pagination metadata.",
+            "properties": {
+              "next": { "type": ["string", "null"], "description": "Cursor for the next page." },
+              "previous": { "type": ["string", "null"], "description": "Cursor for the previous page." },
+              "limit": { "type": "integer", "description": "Items per page (matches size param)." },
+              "total": { "type": "integer", "description": "Total recipients available." },
+              "has_more_items": { "type": "boolean" }
+            }
+          },
+          "recipients": {
+            "type": "array",
+            "description": "Array of transfer recipient objects discriminated by `type`.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "description": "Recipient id (use with get/delete_transfer_recipient)." },
+                "type": {
+                  "type": "string",
+                  "description": "Discriminator. One of: bank, mobile_money, wallet, cash_pickup, crypto."
+                },
+                "name": {
+                  "type": ["object", "null"],
+                  "properties": {
+                    "first": { "type": "string" },
+                    "middle": { "type": "string" },
+                    "last": { "type": "string" }
+                  }
+                },
+                "currency": { "type": "string", "description": "ISO 4217 currency code." },
+                "email": { "type": "string", "format": "email" },
+                "phone": {
+                  "type": ["object", "null"],
+                  "properties": {
+                    "country_code": { "type": "string" },
+                    "number": { "type": "string" }
+                  }
+                },
+                "address": {
+                  "type": ["object", "null"],
+                  "properties": {
+                    "line1": { "type": "string" },
+                    "line2": { "type": "string" },
+                    "city": { "type": "string" },
+                    "state": { "type": "string" },
+                    "country": { "type": "string", "description": "ISO 3166-1 alpha-2." },
+                    "postal_code": { "type": "string" }
+                  }
+                },
+                "date_of_birth": { "type": "string", "description": "YYYY-MM-DD." },
+                "national_identification": {
+                  "type": ["object", "null"],
+                  "properties": {
+                    "type": { "type": "string", "enum": ["PASSPORT", "DRIVERS_LICENSE", "NATIONAL_ID"] },
+                    "identifier": { "type": "string" },
+                    "expiration_date": { "type": "string", "description": "YYYY-MM-DD." }
+                  }
+                },
+                "bank": {
+                  "type": ["object", "null"],
+                  "description": "Present when type is bank.",
+                  "properties": {
+                    "account_number": { "type": "string" },
+                    "account_type": { "type": "string", "enum": ["checking", "savings", "individual", "corporate"] },
+                    "code": { "type": "string" },
+                    "branch": { "type": "string" },
+                    "name": { "type": "string" },
+                    "routing_number": { "type": "string" },
+                    "swift_code": { "type": "string" },
+                    "sort_code": { "type": "string" }
+                  }
+                },
+                "mobile_money": {
+                  "type": ["object", "null"],
+                  "description": "Present when type is mobile_money.",
+                  "properties": {
+                    "network": { "type": "string" },
+                    "country": { "type": "string" },
+                    "msisdn": { "type": "string" }
+                  }
+                },
+                "wallet": {
+                  "type": ["object", "null"],
+                  "description": "Present when type is wallet.",
+                  "properties": {
+                    "provider": { "type": "string", "description": "e.g. flutterwave." },
+                    "identifier": { "type": "string" }
+                  }
+                },
+                "cash_pickup": {
+                  "type": ["object", "null"],
+                  "description": "Present when type is cash_pickup.",
+                  "properties": {
+                    "provider": { "type": "string" }
+                  }
+                },
+                "crypto": {
+                  "type": ["object", "null"],
+                  "description": "Present when type is crypto.",
+                  "properties": {
+                    "network": { "type": "string" },
+                    "address": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Pagination is cursor-based and lives at data.cursor (not meta.page_info). Pass back data.cursor.next as `next=` or data.cursor.previous as `previous=`; use data.cursor.has_more_items to know when to stop. Do not synthesize cursor values client-side.",
+    "size must be between 10 and 50 inclusive. Values outside this range return a 400 REQUEST_NOT_VALID validation error.",
+    "Recipients are discriminated by the `type` field (bank | mobile_money | wallet | cash_pickup | crypto). Type-specific destination details live on sibling keys (bank, mobile_money, wallet, cash_pickup, crypto) — do not assume a single `details` object.",
+    "Recipient IDs returned here are opaque strings. Pass them as-is to get/delete_transfer_recipient — do not apply encodeURIComponent."
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "oauth2_token_url": "https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token",
+  "sandbox_base_url": "https://developersandbox-api.flutterwave.com",
+  "steps": [
+    {
+      "capability": "get_wallet_balance",
+      "path_params": { "currency": "NGN" }
+    },
+    {
+      "capability": "get_wallet_statement",
+      "query_params": { "currency": "NGN", "size": "10" }
+    },
+    {
+      "capability": "list_wallet_balances"
+    },
+    {
+      "capability": "list_transfer_recipients",
+      "query_params": { "size": "10" }
+    },
+    {
+      "capability": "list_customers",
+      "query_params": { "page": "1", "size": "10" }
+    },
+    {
+      "capability": "create_customer",
+      "body": {
+        "email": "live-$ts@afrotools.dev",
+        "name": { "first": "Live", "last": "Test" },
+        "phone": { "country_code": "234", "number": "8012345678" }
+      },
+      "headers": { "X-Idempotency-Key": "cus-$ts" },
+      "store_as": "customer"
+    },
+    {
+      "capability": "get_customer",
+      "path_params": { "id": "$customer.data.id" }
+    },
+    {
+      "capability": "create_payment_method",
+      "body": {
+        "type": "mobile_money",
+        "customer_id": "$customer.data.id",
+        "mobile_money": { "network": "MTN", "country_code": "233", "phone_number": "244000001" }
+      },
+      "headers": { "X-Idempotency-Key": "pm-$ts" },
+      "discriminated_union": {
+        "type_field": "type",
+        "sibling_keys": ["card", "bank_account", "mobile_money", "opay", "applepay", "googlepay", "ussd"]
+      },
+      "store_as": "payment_method"
+    },
+    {
+      "capability": "create_virtual_account",
+      "body": {
+        "customer_id": "$customer.data.id",
+        "amount": 0,
+        "reference": "va-$ts",
+        "currency": "NGN",
+        "account_type": "static",
+        "bvn": "12345678901"
+      },
+      "headers": { "X-Idempotency-Key": "va-$ts" }
+    },
+    {
+      "capability": "create_transfer_rate",
+      "body": {
+        "source": { "currency": "NGN" },
+        "destination": { "currency": "EUR", "amount": 10 }
+      },
+      "headers": { "X-Idempotency-Key": "rate-$ts" },
+      "store_as": "rate"
+    },
+    {
+      "capability": "create_charge",
+      "body": {
+        "amount": 1,
+        "currency": "GHS",
+        "reference": "chg-$ts",
+        "customer_id": "$customer.data.id",
+        "payment_method_id": "$payment_method.data.id"
+      },
+      "headers": { "X-Idempotency-Key": "chg-$ts" },
+      "store_as": "charge"
+    },
+    {
+      "capability": "get_charge",
+      "path_params": { "id": "$charge.data.id" }
+    }
+  ]
+}

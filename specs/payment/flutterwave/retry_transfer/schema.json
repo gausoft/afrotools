@@ -1,0 +1,159 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "retry_transfer",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "POST",
+    "url": "https://f4bexperience.flutterwave.com/transfers/{id}/retries"
+  },
+  "example_prompt": "Retry a failed Flutterwave v4 transfer using the original instruction, with an idempotency key to prevent accidental duplicates.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id", "action", "trace_id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "ID of the initial transfer (path parameter)."
+      },
+      "action": {
+        "type": "string",
+        "enum": ["retry", "duplicate"],
+        "description": "retry: re-process a previously FAILED transfer with the same parameters. duplicate: create a new transfer with the same details as a SUCCESSFUL transfer."
+      },
+      "reference": {
+        "type": "string",
+        "minLength": 6,
+        "maxLength": 42,
+        "pattern": "^[A-Za-z0-9]+$",
+        "description": "Optional custom alphanumeric reference for the new attempt (6-42 chars)."
+      },
+      "meta": {
+        "type": "object",
+        "description": "Optional custom metadata key-value pairs.",
+        "additionalProperties": true
+      },
+      "callback_url": {
+        "type": "string",
+        "format": "uri",
+        "description": "Optional webhook URL for status updates on the new attempt."
+      },
+      "trace_id": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Required X-Trace-Id header value (12-255 chars) for request correlation."
+      },
+      "idempotency_key": {
+        "type": "string",
+        "minLength": 12,
+        "maxLength": 255,
+        "description": "Optional X-Idempotency-Key header value (12-255 chars). Same key returns the original response."
+      },
+      "scenario_key": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000,
+        "description": "Optional X-Scenario-Key header for sandbox scenario testing (1-1000 chars)."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": { "type": "string", "enum": ["success"], "description": "\"success\" on 201." },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "description": "ID of the new transfer attempt (different from the parent transfer id)." },
+          "type": { "type": "string", "description": "e.g. \"bank\"." },
+          "action": { "type": "string", "enum": ["retry", "duplicate"] },
+          "reference": { "type": "string" },
+          "status": { "type": "string", "enum": ["NEW", "PENDING", "FAILED", "SUCCESSFUL", "CANCELLED", "INITIATED"] },
+          "source_currency": { "type": "string" },
+          "destination_currency": { "type": "string" },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "applies_to": { "type": "string", "enum": ["destination_currency", "source_currency"] }
+            }
+          },
+          "fee": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "value": { "type": "number" }
+            }
+          },
+          "debit_information": {
+            "type": "object",
+            "properties": {
+              "currency": { "type": "string" },
+              "actual_debit_amount": { "type": "number" },
+              "rate_used": { "type": "number" },
+              "vat": { "type": "number" }
+            }
+          },
+          "retry": {
+            "type": "object",
+            "description": "Present when action == \"retry\".",
+            "properties": {
+              "parent_id": { "type": "string" },
+              "parent_reference": { "type": "string" }
+            }
+          },
+          "duplicate": {
+            "type": "object",
+            "description": "Present when action == \"duplicate\".",
+            "properties": {
+              "parent_id": { "type": "string" },
+              "parent_reference": { "type": "string" }
+            }
+          },
+          "recipient": { "type": "object", "additionalProperties": true },
+          "sender": { "type": "object", "additionalProperties": true },
+          "created_datetime": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": { "type": "array", "items": { "type": "object", "properties": { "field_name": { "type": "string" }, "message": { "type": "string" } } } }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Two distinct retry modes via the `action` field: `retry` only works on transfers in a FAILED state (re-attempts the same payment); `duplicate` only works on transfers in a SUCCESSFUL state (creates a brand-new transfer with the same details). Using `retry` on a successful transfer or `duplicate` on a failed one returns 409 RESOURCE_CONFLICT.",
+    "X-Idempotency-Key is strongly recommended (12-255 chars) to prevent accidental double-submissions on flaky networks — replays return the original response instead of creating another attempt.",
+    "The path is POST /transfers/{id}/retries (plural \"retries\") — not /transfers/{id}/retry. The response returns a NEW transfer id distinct from the parent id; the `retry` or `duplicate` object in the response carries the parent_id and parent_reference linking back.",
+    "Always pair this call with a subsequent GET /transfers/{id} poll using the new id to confirm the new attempt's terminal status before acting on it. The 201 response only reflects the initial submission, not the final outcome.",
+    "X-Trace-Id is required on this endpoint (12-255 chars). Transfer IDs are opaque strings — pass as-is into the path, do not apply encodeURIComponent."
+  ]
+}

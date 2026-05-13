@@ -1,0 +1,132 @@
+{
+  "spec_version": "1.0",
+  "provider_api_version": "v4",
+  "capability": "get_customer",
+  "capability_type": "synchronous",
+  "status": "ready",
+  "currency": [
+    "GHS",
+    "KES",
+    "NGN",
+    "RWF",
+    "SLE",
+    "TZS",
+    "UGX",
+    "XAF",
+    "XOF",
+    "ZAR",
+    "ZMW"
+  ],
+  "auth": {
+    "type": "oauth2",
+    "location": "header",
+    "field": "Authorization",
+    "format": "Bearer {access_token}",
+    "env_var": "FLUTTERWAVE_CLIENT_CREDENTIALS"
+  },
+  "endpoint": {
+    "method": "GET",
+    "url": "https://f4bexperience.flutterwave.com/customers/{id}"
+  },
+  "example_prompt": "Retrieve a single Flutterwave customer by their unique customer ID.",
+  "input_schema": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": {
+        "type": "string",
+        "description": "Unique customer identifier (path parameter, e.g. cus_3XarBILKQS) returned by create_customer or list_customers."
+      }
+    }
+  },
+  "response_schema": {
+    "type": "object",
+    "required": ["status", "data"],
+    "properties": {
+      "status": {
+        "type": "string",
+        "enum": ["success"]
+      },
+      "message": { "type": "string" },
+      "data": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "name": {
+            "type": "object",
+            "description": "Present only when provided as nested object during customer creation.",
+            "properties": {
+              "first": { "type": "string" },
+              "middle": { "type": ["string", "null"] },
+              "last": { "type": "string" }
+            }
+          },
+          "phone": {
+            "type": "object",
+            "description": "Present only when provided as nested object during customer creation.",
+            "properties": {
+              "country_code": { "type": "string" },
+              "number": { "type": "string" }
+            }
+          },
+          "address": {
+            "type": ["object", "null"],
+            "description": "Present only when provided during customer creation.",
+            "properties": {
+              "line1": { "type": "string" },
+              "line2": { "type": ["string", "null"] },
+              "city": { "type": "string" },
+              "state": { "type": "string" },
+              "country": { "type": "string" },
+              "postal_code": { "type": "string" }
+            }
+          },
+          "meta": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "created_datetime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "error_schema": {
+    "type": "object",
+    "required": ["status", "error"],
+    "properties": {
+      "status": { "type": "string", "enum": ["failed"] },
+      "message": { "type": "string" },
+      "error": {
+        "type": "object",
+        "required": ["type", "code", "message"],
+        "properties": {
+          "type": { "type": "string", "description": "REQUEST_NOT_VALID | UNAUTHORIZED | FORBIDDEN | RESOURCE_CONFLICT | NOT_FOUND" },
+          "code": { "type": "string", "description": "Numeric code as string: 10400, 10401, 10403, 10404, 10409" },
+          "message": { "type": "string" },
+          "validation_errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_name": { "type": "string" },
+                "message": { "type": "string" }
+              }
+            },
+            "description": "Present on 400 validation errors."
+          }
+        }
+      }
+    }
+  },
+  "gotchas": [
+    "Flutterwave v4 uses OAuth2 client credentials. POST client_id and client_secret as form-encoded body to https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token to obtain an access_token (valid 10 minutes), then use it as Bearer in the Authorization header. The FLUTTERWAVE_CLIENT_CREDENTIALS env var stores base64(client_id:client_secret).",
+    "Customer IDs returned by Flutterwave are opaque strings (e.g. cus_3XarBILKQS). Do not apply encodeURIComponent to these IDs when constructing the path — pass them in the URL as-is.",
+    "Always send an X-Trace-Id header (12-255 chars) so Flutterwave support can find the request in their logs if anything goes wrong.",
+    "An unknown customer ID returns HTTP 404 with error.type 'NOT_FOUND' and code '10404', not an empty 200. Handle 404 separately from network errors.",
+    "Validation error items use the key 'field_name' (not 'field') — match on error.validation_errors[].field_name when surfacing per-field errors to users."
+  ]
+}
