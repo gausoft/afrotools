@@ -26,21 +26,30 @@ You can add a spec manually (steps below) or use the `/afrotools:new` skill to a
 the process. The skill reads the provider's API documentation and scaffolds `provider.json`,
 `schema.json`, and `canonical_example.ts` for every capability it finds, then runs validation.
 
+Before invoking the skill, always refresh it to the latest version:
+
+```bash
+claude plugin update afrotools
 ```
-/afrotools:new https://docs.example.com/api payment myprovider
+
+Then point it at the provider's docs URL — category and provider slug are inferred
+automatically and do not need to be passed:
+
+```
+/afrotools:new https://docs.example.com/api
 ```
 
 If the provider's docs are behind a login or not publicly accessible, point the skill at a
 local file instead:
 
 ```
-/afrotools:new ./my-provider-docs.html payment myprovider
+/afrotools:new ./my-provider-docs.html
 ```
 
 To create the local file, ask an AI agent to generate it from the schemas or Postman
-collection the provider gave you — paste the raw content and ask it to write a single HTML
-or Markdown file that covers all endpoints, request/response fields, and auth details. The
-skill will then read that file exactly as it would a public URL.
+collection the provider gave you — paste the raw content and ask it to produce a single
+Markdown file covering all endpoints, request/response fields, and auth details. The skill
+reads that file exactly as it would a public URL.
 
 Whether you use the skill or work manually, the live API verification step (§ 7 below)
 applies to both.
@@ -179,6 +188,16 @@ Output:
 - ❌ Required field missing from response → fix the spec or the fixture
 - 〰  Optional field absent from response → likely conditional; add a description to the field
 - ⚠️  Field present in response, absent from spec → add it to `response_schema`
+
+**Generating `live_test_fixtures.json`:**
+
+You do not need to write the fixture by hand. Ask an AI agent to generate it for you —
+share the list of capabilities (folder names under `specs/{category}/{provider_slug}/`)
+and the `schema.json` files. Ask it to produce a `live_test_fixtures.json` that covers
+all capabilities in the right order (creates resources before using them), uses `$ts` for
+unique references, and wires cross-step references with `$step_name.data.field`. Review
+the result, fill in any provider-specific test values (phone numbers, bank codes, etc.),
+then commit it.
 
 **Tips:**
 - Use a sandbox key or minimal test amounts — never a production key with real funds.
