@@ -3,7 +3,7 @@
   "provider_api_version": "v4",
   "capability": "create_customer",
   "capability_type": "synchronous",
-  "status": "draft",
+  "status": "ready",
   "currency": [
     "GHS",
     "KES",

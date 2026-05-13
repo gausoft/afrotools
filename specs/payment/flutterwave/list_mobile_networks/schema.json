@@ -3,7 +3,7 @@
   "provider_api_version": "v4",
   "capability": "list_mobile_networks",
   "capability_type": "synchronous",
-  "status": "draft",
+  "status": "ready",
   "currency": ["GHS", "KES", "NGN", "RWF", "SLE", "TZS", "UGX", "XAF", "XOF", "ZAR", "ZMW"],
   "auth": {
     "type": "oauth2",
