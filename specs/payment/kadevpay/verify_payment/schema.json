@@ -81,6 +81,7 @@
     "Use the SECRET key (kdvs_*), not the public key — using the wrong key returns 401.",
     "reference is passed as a path parameter: GET /api/v1/transactions/verify/{reference}, not in the request body.",
     "Never fulfill an order until data.status === 'paid' — always verify server-side after the onSuccess callback or callback_url redirect.",
+    "Pass the reference directly as a path segment — do not URL-encode it. The format KDV-* contains only safe characters.",
     "mode: 'test' appears in sandbox responses — check this field to distinguish test vs live transactions."
   ]
 }

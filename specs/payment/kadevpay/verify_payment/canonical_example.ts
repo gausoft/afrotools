@@ -34,7 +34,7 @@ interface KadevPayError {
 
 export async function verifyPayment(reference: string): Promise<VerifyPaymentResponse> {
   const response = await fetch(
-    `https://pay.kadev.ci/api/v1/transactions/verify/${encodeURIComponent(reference)}`,
+    `https://pay.kadev.ci/api/v1/transactions/verify/${reference}`,
     {
       method: "GET",
       headers: {
