@@ -58,12 +58,12 @@ Usage example:
 // After receiving the reference from the checkout onSuccess callback or callback_url redirect:
 const result = await verifyPayment("KDV-1775413916000");
 
-if (result.data.status === "paid") {
+if (result.status === "success" && result.data.status === "paid") {
   // Safe to fulfill the order
   console.log("Payment confirmed:", result.data.amount, result.data.currency);
   console.log("Customer:", result.data.customer?.full_name);
 } else {
-  // Do not fulfill — payment is still pending or failed
-  console.log("Payment not completed:", result.data.status);
+  // Do not fulfill — payment is still pending, failed, or the reference is invalid
+  console.log("Payment not confirmed:", result.status, result.data.status);
 }
 */
